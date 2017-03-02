@@ -1,0 +1,10 @@
+---
+- include_vars: "{{ ansible_os_family }}.yml"
+
+- name: create cache directory
+  file:
+    state: directory
+    path: "{{ ansible_cache }}"
+    mode: 0700
+    owner: root
+    group: "{{ ansible_wheel }}"
