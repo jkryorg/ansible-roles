@@ -1,0 +1,12 @@
+---
+- block:
+  - name: install sysstat package
+    package:
+      name: sysstat
+      state: installed
+
+  - name: enable sysstat service
+    service:
+      name: sysstat
+      enabled: yes
+  when: ansible_system == "Linux"
