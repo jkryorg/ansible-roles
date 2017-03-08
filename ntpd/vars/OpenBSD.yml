@@ -1,0 +1,4 @@
+---
+ntpd_config: /etc/ntpd.conf
+ntpd_template: openntpd.conf.j2
+ntpd_service: ntpd

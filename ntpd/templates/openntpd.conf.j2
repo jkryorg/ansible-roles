@@ -1,0 +1,9 @@
+# Addresses to listen on (ntpd does not listen by default)
+{% for listen in ntpd_listen %}
+listen {{ listen }}
+{% endfor %}
+
+# Remote servers
+{% for server in ntpd_servers %}
+server {{ server }}
+{% endfor %}

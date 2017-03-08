@@ -1,0 +1,5 @@
+---
+ntpd_config: /etc/chrony.conf
+ntpd_template: chrony.conf.j2
+ntpd_service: chronyd
+ntpd_package: chrony
