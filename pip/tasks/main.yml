@@ -1,0 +1,17 @@
+---
+- include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_os_family }}.yml"
+    - default.yml
+
+- name: install pip package
+  package:
+    name: "{{ pip_package }}"
+    state: installed
+
+- name: create /usr/local/bin/pip symlink
+  file:
+    state: link
+    src: "/usr/local/bin/pip{{ pip_python_version }}"
+    dest: /usr/local/bin/pip
+  when: ansible_system == "OpenBSD"
