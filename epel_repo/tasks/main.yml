@@ -1,0 +1,4 @@
+- name: install epel-release package
+  package:
+    name: epel-release
+    state: installed
