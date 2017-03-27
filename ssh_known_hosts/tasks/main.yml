@@ -1,0 +1,7 @@
+- name: create ssh_known_hosts
+  template:
+    src: ssh_known_hosts.j2
+    dest: /etc/ssh/ssh_known_hosts
+    mode: 0644
+    owner: root
+    group: "{{ ansible_wheel }}"
