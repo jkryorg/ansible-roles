@@ -1,0 +1,3 @@
+---
+dependencies:
+  - { role: epel_repo, when: ansible_os_family == 'RedHat' }

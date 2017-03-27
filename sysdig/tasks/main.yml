@@ -1,0 +1,15 @@
+---
+- name: add draios yum repository
+  yum_repository:
+    name: draios
+    description: Draios
+    baseurl: http://download.draios.com/stable/rpm/$basearch/
+    gpgcheck: yes
+    gpgkey: https://s3.amazonaws.com/download.draios.com/DRAIOS-GPG-KEY.public
+  when: ansible_os_family == "RedHat"
+
+- name: install sysdig package
+  package:
+    name: sysdig
+    state: installed
+  when: ansible_system == "Linux"
