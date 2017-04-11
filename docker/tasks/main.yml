@@ -1,0 +1,14 @@
+---
+- name: install docker packages
+  package:
+    name: "{{ item }}"
+    state: installed
+  with_items:
+    - docker
+    - python-docker-py
+
+- name: start docker service
+  service:
+    name: docker
+    state: started
+    enabled: yes
