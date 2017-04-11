@@ -1,0 +1,7 @@
+---
+- name: set authorized keys for root
+  authorized_key:
+    state: present
+    user: root
+    key: "{{ ssh_authorized_keys|join('\n') }}"
+    exclusive: yes
