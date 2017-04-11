@@ -1,3 +1,4 @@
+---
 - name: create ssh_known_hosts
   template:
     src: ssh_known_hosts.j2
