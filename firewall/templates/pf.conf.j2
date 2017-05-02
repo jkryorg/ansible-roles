@@ -1,0 +1,22 @@
+#jinja2: lstrip_blocks: "True", trim_blocks: "True"
+set block-policy return
+set skip on lo0
+
+block in
+pass out
+
+pass in quick inet proto icmp
+pass in quick inet6 proto icmp6
+
+{% for rule in firewall_raw %}
+{{ rule }}
+{% endfor %}
+{% for rule in firewall_in %}
+  {% if rule.from is defined %}
+    {% for from in rule.from | ipaddr %}
+pass in quick proto {{ rule.proto }} from {{ from }} to port {{ rule.port }}
+    {% endfor %}
+  {% else %}
+pass in quick proto {{ rule.proto }} to port {{ rule.port }}
+  {% endif %}
+{% endfor %}

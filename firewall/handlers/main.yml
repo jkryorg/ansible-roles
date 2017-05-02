@@ -1,0 +1,13 @@
+---
+- name: reload pf
+  command: /sbin/pfctl -f /etc/pf.conf
+
+- name: reload iptables
+  service:
+    name: iptables
+    state: reloaded
+
+- name: reload ip6tables
+  service:
+    name: ip6tables
+    state: reloaded

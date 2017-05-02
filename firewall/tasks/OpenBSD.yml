@@ -1,0 +1,9 @@
+---
+- name: create pf.conf
+  template:
+    src: pf.conf.j2
+    dest: /etc/pf.conf
+    mode: 0600
+    owner: root
+    group: wheel
+  notify: reload pf

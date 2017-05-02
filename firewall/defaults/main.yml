@@ -1,0 +1,4 @@
+---
+firewall_in:
+  - { proto: tcp, port: 22 }
+firewall_raw: []
