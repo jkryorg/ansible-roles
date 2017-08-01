@@ -1,5 +1,6 @@
 ---
-- include_vars: "{{ ansible_os_family }}.yml"
+- name: include OS-specific variables
+  include_vars: "{{ ansible_os_family }}.yml"
 
 - name: install ntpd package
   package:

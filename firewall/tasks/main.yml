@@ -1,2 +1,3 @@
 ---
-- include: "{{ ansible_os_family }}.yml"
+- name: include OS-specific tasks
+  include: "{{ ansible_os_family }}.yml"
