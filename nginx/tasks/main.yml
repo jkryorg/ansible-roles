@@ -1,0 +1,50 @@
+---
+- name: include OS-specific variables
+  include_vars: "{{ ansible_os_family }}.yml"
+
+- name: install nginx package
+  package:
+    name: nginx
+    state: installed
+
+- name: configure nginx
+  template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+    mode: 0644
+    owner: root
+    group: "{{ ansible_wheel }}"
+  notify: restart nginx
+
+- name: enable nginx service
+  service:
+    name: nginx
+    state: started
+    enabled: yes
+
+- name: Put files in nginx conf.d
+  template:
+    src: "{{ item.value }}"
+    dest: "/etc/nginx/conf.d/{{ item.key }}"
+    mode: 0644
+    owner: root
+    group: "{{ ansible_wheel }}"
+  with_dict: "{{ nginx_config }}"
+  notify: restart nginx
+
+- name: Make a list of .conf files in /etc/nginx/conf.d
+  find:
+    paths: "/etc/nginx/conf.d"
+    patterns: "*.conf"
+  register: all_files
+
+- name: Remove unmanaged config files
+  file:
+    name: "{{ item.path }}"
+    state: absent
+  with_items: "{{ all_files.files | default([]) }}"
+  when: item.path|basename not in nginx_config.keys()
+  notify:
+    - reload nginx
+
+
