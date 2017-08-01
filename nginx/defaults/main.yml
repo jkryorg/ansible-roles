@@ -1,0 +1,7 @@
+---
+chroot: true
+workers: "{{ ansible_processor_cores * ansible_processor_count }}"
+nginx_user: "nginx"
+nginx_group: "nginx"
+nginx_logdir: "/var/log/nginx"
+

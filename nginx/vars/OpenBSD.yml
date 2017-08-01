@@ -1,0 +1,5 @@
+---
+nginx_user: www
+nginx_group: www
+nginx_logdir: /var/www/logs
+if ! chroot { arguments: -u }

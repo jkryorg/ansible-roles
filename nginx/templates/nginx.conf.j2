@@ -1,0 +1,22 @@
+# {{ ansible_managed }}
+
+user {{ nginx_user }} ;
+worker_processes {{ workers }};
+worker_rlimit_nofile 1024;
+
+error_log {{ nginx_logdir }}/error.log;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    include mime.types;
+    default_type application/octet-stream;
+
+    access_log {{ nginx_logdir }}/access.log combined;
+
+    server_tokens off;
+
+    include conf.d/*.conf;
+}
