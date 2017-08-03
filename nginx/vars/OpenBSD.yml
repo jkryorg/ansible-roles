@@ -2,4 +2,5 @@
 nginx_user: www
 nginx_group: www
 nginx_logdir: /var/www/logs
-if ! chroot { arguments: -u }
+nginx_arguments: "{% if chroot == False %}-u{% else %}''{% endif %}"
+workers: "{{ ansible_processor_count|int }}"
