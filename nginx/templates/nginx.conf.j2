@@ -1,7 +1,7 @@
 # {{ ansible_managed }}
 
 user {{ nginx_user }} ;
-worker_processes {{ workers }};
+worker_processes {{ nginx_workers }};
 worker_rlimit_nofile 1024;
 
 error_log {{ nginx_logdir }}/error.log;
