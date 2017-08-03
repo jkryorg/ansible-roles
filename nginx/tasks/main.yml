@@ -21,6 +21,15 @@
     name: nginx
     state: started
     enabled: yes
+    arguments: "{{ nginx_arguments | default() }}"
+
+- name: Create directory for site specific configurations
+  file:
+    path: "/etc/nginx/conf.d"
+    state: directory
+    owner: root
+    group: "{{ ansible_wheel }}"
+    mode: 0644
 
 - name: Put files in nginx conf.d
   template:
