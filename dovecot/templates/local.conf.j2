@@ -1,0 +1,27 @@
+#jinja2: lstrip_blocks: "True", trim_blocks: "True"
+# {{ ansible_managed }}
+{% if dovecot_location is defined %}
+mail_location = {{ dovecot_format }}:{{ dovecot_location }}
+{% endif %}
+{% if dovecot_format == "mdbox" %}
+
+# mdbox settings
+mdbox_rotate_size = 10M
+mdbox_rotate_interval = 10d
+{% endif %}
+
+# disable plain text imap and pop3
+service pop3-login {
+  inet_listener pop3 {
+    port = 0
+  }
+}
+service imap-login {
+  inet_listener imap {
+    port = 0
+  }
+}
+{% if dovecot_config is defined %}
+
+{{ dovecot_config }}
+{%- endif %}
