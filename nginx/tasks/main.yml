@@ -29,7 +29,7 @@
     state: directory
     owner: root
     group: "{{ ansible_wheel }}"
-    mode: 0644
+    mode: 0755
 
 - name: Put files in nginx conf.d
   template:
