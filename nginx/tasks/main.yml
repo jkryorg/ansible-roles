@@ -41,19 +41,20 @@
   with_dict: "{{ nginx_config }}"
   notify: restart nginx
 
-- name: Make a list of .conf files in /etc/nginx/conf.d
-  find:
-    paths: "/etc/nginx/conf.d"
-    patterns: "*.conf"
-  register: all_files
+- block:
+  - name: Make a list of .conf files in /etc/nginx/conf.d
+    find:
+      paths: "/etc/nginx/conf.d"
+      patterns: "*.conf"
+    register: all_files
 
-- name: Remove unmanaged config files
-  file:
-    name: "{{ item.path }}"
-    state: absent
-  with_items: "{{ all_files.files | default([]) }}"
-  when: item.path|basename not in nginx_config.keys()
-  notify:
-    - reload nginx
-
+  - name: Remove unmanaged config files
+    file:
+      name: "{{ item.path }}"
+      state: absent
+    with_items: "{{ all_files.files | default([]) }}"
+    when: item.path|basename not in nginx_config.keys()
+    notify:
+      - reload nginx
+  when: nginx_remove_unmanaged
 
