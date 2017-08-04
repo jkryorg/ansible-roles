@@ -1,0 +1,4 @@
+---
+nginx_user: nginx
+nginx_group: nginx
+nginx_logdir: /var/log/nginx

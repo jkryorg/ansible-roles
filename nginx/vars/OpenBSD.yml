@@ -1,0 +1,6 @@
+---
+nginx_user: www
+nginx_group: www
+nginx_logdir: /var/www/logs
+nginx_arguments: "{% if nginx_chroot == False %}-u{% else %}''{% endif %}"
+nginx_workers: "{{ ansible_processor_count|int }}"
