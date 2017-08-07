@@ -1,0 +1,4 @@
+---
+opensmtpd_aliases: /etc/mail/aliases
+opensmtpd_config: /etc/mail/smtpd.conf
+opensmtpd_service: smtpd

@@ -1,0 +1,71 @@
+---
+- name: include OS-specific variables
+  include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_os_family }}.yml"
+    - default.yml
+
+- name: install opensmtpd package
+  package:
+    name: "{{ opensmtpd_package }}"
+    state: installed
+  notify: set mta to opensmtpd
+  when: opensmtpd_package is defined
+
+- block:
+  - name: install certificate
+    copy:
+      src: "{{ opensmtpd_cert_src }}"
+      dest: "{{ tls_certs }}/smtpd.crt"
+      mode: 0644
+      owner: root
+      group: "{{ ansible_wheel }}"
+    notify: restart opensmtpd
+
+  - name: install private key
+    copy:
+      src: "{{ opensmtpd_key_src }}"
+      dest: "{{ tls_private }}/smtpd.key"
+      mode: 0600
+      owner: root
+      group: "{{ ansible_wheel }}"
+    notify: restart opensmtpd
+  when:
+    - opensmtpd_cert_src is defined
+    - opensmtpd_key_src is defined
+
+- name: copy opensmtpd config
+  copy:
+    src: "{{ opensmtpd_config_src }}"
+    dest: "{{ opensmtpd_config }}"
+    mode: 0644
+    owner: root
+    group: "{{ ansible_wheel }}"
+  notify: restart opensmtpd
+  when: opensmtpd_config_src is defined
+
+- name: configure opensmtpd from template
+  template:
+    src: smtpd.conf.j2
+    dest: "{{ opensmtpd_config }}"
+    mode: 0644
+    owner: root
+    group: "{{ ansible_wheel }}"
+  notify: restart opensmtpd
+  when: opensmtpd_config_src is not defined
+
+- name: copy aliases
+  copy:
+    src: "{{ opensmtpd_aliases_src }}"
+    dest: "{{ opensmtpd_aliases }}"
+    mode: 0644
+    owner: root
+    group: "{{ ansible_wheel }}"
+  notify: makemap aliases
+  when: opensmtpd_aliases_src is defined
+
+- name: enable opensmtpd service
+  service:
+    name: "{{ opensmtpd_service }}"
+    state: started
+    enabled: yes

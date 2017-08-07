@@ -1,0 +1,3 @@
+---
+opensmtpd_cert: "{{ tls_certs }}/smtpd.crt"
+opensmtpd_key: "{{ tls_private }}/smtpd.key"
