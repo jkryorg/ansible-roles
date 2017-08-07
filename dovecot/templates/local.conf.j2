@@ -21,7 +21,7 @@ service imap-login {
     port = 0
   }
 }
-{% if dovecot_config is defined %}
+{% if dovecot_add_config is defined %}
 
-{{ dovecot_config }}
+{{ dovecot_add_config }}
 {%- endif %}
