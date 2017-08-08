@@ -1,0 +1,27 @@
+---
+- name: include OS-specific variables
+  include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_os_family }}.yml"
+    - default.yml
+
+- name: install spamassassin package
+  package:
+    name: "{{ spamassassin_package }}"
+    state: installed
+
+- name: enable spamassassin service
+  service:
+    name: spamassassin
+    state: started
+    enabled: yes
+    arguments: "{{ spamassassin_arguments | default() }}"
+
+- name: add sa-update cron job
+  cron:
+    name: sa-update
+    user: root
+    hour: 4
+    minute: "{{ 59 | random(seed=inventory_hostname) }}"
+    job: "{{ spamassassin_update }}"
+  when: spamassassin_update is defined
