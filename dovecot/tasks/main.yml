@@ -1,0 +1,51 @@
+---
+- name: install dovecot package
+  package:
+    name: dovecot
+    state: installed
+
+- block:
+  - name: install certificate
+    copy:
+      src: "{{ dovecot_cert_src }}"
+      dest: "{{ tls_certs }}/dovecot.crt"
+      mode: 0644
+      owner: root
+      group: "{{ ansible_wheel }}"
+    notify: restart dovecot
+
+  - name: install private key
+    copy:
+      src: "{{ dovecot_key_src }}"
+      dest: "{{ tls_private }}/dovecot.key"
+      mode: 0600
+      owner: root
+      group: "{{ ansible_wheel }}"
+    notify: restart dovecot
+  when:
+    - dovecot_cert_src is defined
+    - dovecot_key_src is defined
+
+- name: configure ssl
+  template:
+    src: ssl.conf.j2
+    dest: /etc/dovecot/conf.d/10-ssl.conf
+    mode: 0644
+    owner: root
+    group: "{{ ansible_wheel }}"
+  notify: restart dovecot
+
+- name: configure dovecot
+  template:
+    src: local.conf.j2
+    dest: /etc/dovecot/conf.d/95-local.conf
+    mode: 0644
+    owner: root
+    group: "{{ ansible_wheel }}"
+  notify: restart dovecot
+
+- name: enable dovecot service
+  service:
+    name: dovecot
+    state: started
+    enabled: yes

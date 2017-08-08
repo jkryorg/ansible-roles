@@ -1,0 +1,4 @@
+---
+dovecot_format: mbox
+dovecot_cert: "{{ tls_certs }}/dovecot.crt"
+dovecot_key: "{{ tls_private }}/dovecot.key"

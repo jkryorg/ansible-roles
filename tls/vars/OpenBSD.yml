@@ -1,0 +1,3 @@
+---
+tls_certs: /etc/ssl
+tls_private: /etc/ssl/private
