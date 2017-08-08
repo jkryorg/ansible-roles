@@ -1,0 +1,3 @@
+---
+tls_certs: /etc/pki/tls/certs
+tls_private: /etc/pki/tls/private
