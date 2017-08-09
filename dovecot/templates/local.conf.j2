@@ -2,6 +2,9 @@
 # {{ ansible_managed }}
 hostname = {{ dovecot_hostname }}
 postmaster_address = {{ dovecot_postmaster }}
+
+first_valid_uid = 1000
+last_valid_uid = {{ dovecot_last_valid_uid }}
 {% if dovecot_location is defined %}
 
 mail_location = {{ dovecot_format }}:{{ dovecot_location }}
