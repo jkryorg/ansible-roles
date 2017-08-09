@@ -5,11 +5,16 @@
     - "{{ ansible_os_family }}.yml"
     - default.yml
 
-- name: install opensmtpd package
-  package:
-    name: "{{ opensmtpd_package }}"
-    state: installed
-  notify: set mta to opensmtpd
+- block:
+  - name: install opensmtpd package
+    package:
+      name: "{{ opensmtpd_package }}"
+      state: installed
+
+  - name: set mta to opensmtpd
+    alternatives:
+      name: mta
+      path: /usr/sbin/sendmail.opensmtpd
   when: opensmtpd_package is defined
 
 - block:
