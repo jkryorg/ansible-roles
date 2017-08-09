@@ -1,0 +1,10 @@
+---
+- name: restart opensmtpd
+  service:
+    name: "{{ opensmtpd_service }}"
+    state: restarted
+
+- name: makemap aliases
+  command: makemap aliases
+  args:
+    chdir: "{{ opensmtpd_aliases|dirname }}"
