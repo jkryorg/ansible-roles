@@ -5,7 +5,6 @@ mail_location = {{ dovecot_format }}:{{ dovecot_location }}
 {% endif %}
 {% if dovecot_format == "mdbox" %}
 
-# mdbox settings
 mdbox_rotate_size = 10M
 mdbox_rotate_interval = 10d
 {% endif %}

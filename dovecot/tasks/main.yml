@@ -1,4 +1,10 @@
 ---
+- name: include OS-specific variables
+  include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_os_family }}.yml"
+    - default.yml
+
 - name: install dovecot package
   package:
     name: dovecot
@@ -49,3 +55,12 @@
     name: dovecot
     state: started
     enabled: yes
+
+- name: add doveadm purge cron job
+  cron:
+    name: doveadm-purge
+    user: root
+    hour: 4
+    minute: 0
+    job: "{{ dovecot_doveadm }} purge -A"
+  when: dovecot_format == "mdbox"
