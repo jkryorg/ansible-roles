@@ -1,6 +1,9 @@
 #jinja2: lstrip_blocks: "True", trim_blocks: "True"
 # {{ ansible_managed }}
+hostname = {{ dovecot_hostname }}
+postmaster_address = {{ dovecot_postmaster }}
 {% if dovecot_location is defined %}
+
 mail_location = {{ dovecot_format }}:{{ dovecot_location }}
 {% endif %}
 {% if dovecot_format == "mdbox" %}
