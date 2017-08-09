@@ -4,3 +4,7 @@ dovecot_cert: "{{ tls_certs }}/dovecot.crt"
 dovecot_key: "{{ tls_private }}/dovecot.key"
 dovecot_hostname: "{{ ansible_nodename }}"
 dovecot_postmaster: "postmaster@{{ ansible_nodename }}"
+dovecot_sieve: false
+dovecot_sieve_scripts:
+  - files/before.sieve
+  - files/default.sieve

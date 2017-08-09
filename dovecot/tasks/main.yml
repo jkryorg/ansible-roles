@@ -10,6 +10,12 @@
     name: dovecot
     state: installed
 
+- name: install dovecot-pigeonhole package
+  package:
+    name: dovecot-pigeonhole
+    state: installed
+  when: dovecot_sieve
+
 - block:
   - name: install certificate
     copy:
@@ -32,6 +38,36 @@
     - dovecot_cert_src is defined
     - dovecot_key_src is defined
 
+- block:
+  - name: create sieve directories
+    file:
+      state: directory
+      path: "{{ item }}"
+      mode: 0755
+      owner: root
+      group: "{{ ansible_wheel }}"
+    with_items:
+      - /etc/dovecot/sieve
+      - /etc/dovecot/sieve/filter.d
+
+  - name: enable sieve filters
+    file:
+      state: link
+      src: "{{ item }}"
+      dest: "/etc/dovecot/sieve/filter.d/{{ item | basename }}"
+    with_items: "{{ dovecot_sieve_filters }}"
+
+  - name: install sieve scripts
+    copy:
+      src: "{{ item }}"
+      dest: "/etc/dovecot/sieve/{{ item | basename }}"
+      mode: 0644
+      owner: root
+      group: "{{ ansible_wheel }}"
+    with_items: "{{ dovecot_sieve_scripts }}"
+    notify: compile sieve scripts
+  when: dovecot_sieve
+
 - name: configure ssl
   template:
     src: ssl.conf.j2
@@ -49,6 +85,18 @@
     owner: root
     group: "{{ ansible_wheel }}"
   notify: restart dovecot
+
+- name: increase dovecot limits in login.conf
+  blockinfile:
+    path: /etc/login.conf
+    block: |
+      dovecot:\
+      	:openfiles-cur=2048:\
+      	:openfiles-max=4096:\
+      	:tc=daemon:
+    marker: "# {mark} ANSIBLE MANAGED BLOCK (dovecot)"
+  notify: restart dovecot
+  when: ansible_system == "OpenBSD"
 
 - name: enable dovecot service
   service:

@@ -1,2 +1,4 @@
 ---
 dovecot_doveadm: /usr/bin/doveadm
+dovecot_sieve_filters:
+  - /usr/bin/spamc

@@ -12,6 +12,32 @@ mdbox_rotate_size = 10M
 mdbox_rotate_interval = 10d
 {% endif %}
 
+lda_mailbox_autocreate = yes
+lda_mailbox_autosubscribe = yes
+
+protocol imap {
+  mail_plugins = $mail_plugins imap_zlib
+}
+{% if dovecot_sieve %}
+
+protocol lda {
+  mail_plugins = $mail_plugins sieve
+}
+
+protocol lmtp {
+  mail_plugins = $mail_plugins sieve
+}
+
+plugin {
+  sieve_plugins = sieve_extprograms
+  sieve_global_extensions = +vnd.dovecot.filter
+  sieve_filter_bin_dir = /etc/dovecot/sieve/filter.d
+
+  sieve_before = /etc/dovecot/sieve/before.sieve
+  sieve_default = /etc/dovecot/sieve/default.sieve
+}
+{%- endif %}
+
 # disable plain text imap and pop3
 service pop3-login {
   inet_listener pop3 {
