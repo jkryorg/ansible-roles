@@ -1,5 +1,15 @@
 ---
-- name: create pf.conf
+- name: copy pf.conf
+  copy:
+    src: "{{ firewall_src }}"
+    dest: /etc/pf.conf
+    mode: 0600
+    owner: root
+    group: wheel
+  notify: reload pf
+  when: firewall_src is defined
+
+- name: create pf.conf from template
   template:
     src: pf.conf.j2
     dest: /etc/pf.conf
@@ -7,3 +17,4 @@
     owner: root
     group: wheel
   notify: reload pf
+  when: firewall_src is not defined
