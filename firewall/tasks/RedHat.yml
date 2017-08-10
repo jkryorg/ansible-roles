@@ -9,7 +9,20 @@
     name: iptables-services
     state: installed
 
-- name: create iptables config
+- name: copy iptables config
+  template:
+    src: "{{ firewall_src[item] }}"
+    dest: "/etc/sysconfig/{{ item }}"
+    mode: 0600
+    owner: root
+    group: root
+  notify: "reload {{ item }}"
+  with_items:
+    - iptables
+    - ip6tables
+  when: firewall_src[item] is defined
+
+- name: create iptables config from template
   template:
     src: "{{ item }}.j2"
     dest: "/etc/sysconfig/{{ item }}"
@@ -20,6 +33,7 @@
   with_items:
     - iptables
     - ip6tables
+  when: firewall_src[item] is not defined
 
 - name: enable iptables service
   service:
