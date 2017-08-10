@@ -10,12 +10,6 @@
     name: dovecot
     state: installed
 
-- name: install dovecot-pigeonhole package
-  package:
-    name: dovecot-pigeonhole
-    state: installed
-  when: dovecot_sieve
-
 - block:
   - name: install certificate
     copy:
@@ -39,6 +33,11 @@
     - dovecot_key_src is defined
 
 - block:
+  - name: install dovecot-pigeonhole package
+    package:
+      name: dovecot-pigeonhole
+      state: installed
+
   - name: create sieve directories
     file:
       state: directory
