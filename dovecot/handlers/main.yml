@@ -3,3 +3,6 @@
   service:
     name: dovecot
     state: restarted
+
+- name: compile sieve scripts
+  command: find /etc/dovecot/sieve -type f -name *.sieve -execdir sievec {} ;

@@ -1,4 +1,10 @@
 ---
+- name: include OS-specific variables
+  include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_os_family }}.yml"
+    - default.yml
+
 - name: install dovecot package
   package:
     name: dovecot
@@ -26,6 +32,41 @@
     - dovecot_cert_src is defined
     - dovecot_key_src is defined
 
+- block:
+  - name: install dovecot-pigeonhole package
+    package:
+      name: dovecot-pigeonhole
+      state: installed
+
+  - name: create sieve directories
+    file:
+      state: directory
+      path: "{{ item }}"
+      mode: 0755
+      owner: root
+      group: "{{ ansible_wheel }}"
+    with_items:
+      - /etc/dovecot/sieve
+      - /etc/dovecot/sieve/filter.d
+
+  - name: enable sieve filters
+    file:
+      state: link
+      src: "{{ item }}"
+      dest: "/etc/dovecot/sieve/filter.d/{{ item | basename }}"
+    with_items: "{{ dovecot_sieve_filters }}"
+
+  - name: install sieve scripts
+    copy:
+      src: "{{ item }}"
+      dest: "/etc/dovecot/sieve/{{ item | basename }}"
+      mode: 0644
+      owner: root
+      group: "{{ ansible_wheel }}"
+    with_items: "{{ dovecot_sieve_scripts }}"
+    notify: compile sieve scripts
+  when: dovecot_sieve
+
 - name: configure ssl
   template:
     src: ssl.conf.j2
@@ -44,8 +85,28 @@
     group: "{{ ansible_wheel }}"
   notify: restart dovecot
 
+- name: increase dovecot limits in login.conf
+  blockinfile:
+    path: /etc/login.conf
+    block: |
+      dovecot:\
+      	:openfiles=2048:\
+      	:tc=daemon:
+    marker: "# {mark} ANSIBLE MANAGED BLOCK (dovecot)"
+  notify: restart dovecot
+  when: ansible_system == "OpenBSD"
+
 - name: enable dovecot service
   service:
     name: dovecot
     state: started
     enabled: yes
+
+- name: add doveadm purge cron job
+  cron:
+    name: doveadm-purge
+    user: root
+    hour: 4
+    minute: 0
+    job: "{{ dovecot_doveadm }} purge -A"
+  when: dovecot_format == "mdbox"
