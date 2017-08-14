@@ -1,0 +1,15 @@
+---
+# workaround for user module failing on OpenBSD when createhome is yes and the
+# home diretory already exists.
+- name: create home directories
+  shell: |
+    mkdir ${myhome} && tar -C /etc/skel -cf - . | tar -C ${myhome} -xpf - && \
+    chown -R ${myuser}:${myuser} ${myhome}
+  environment:
+    myhome: "{{ item.home | default('/home/' + item.name) | quote }}"
+    myuser: "{{ item.name | quote }}"
+  args:
+    creates: "{{ item.home | default('/home/' + item.name) }}"
+    warn: no
+  with_items: "{{ user_users }}"
+  when: item.state | default("present") == "present"
