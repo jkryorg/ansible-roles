@@ -1,0 +1,31 @@
+---
+- name: add groups
+  group:
+    state: present
+    gid: "{{ item.uid }}"
+    name: "{{ item.name }}"
+  with_items: "{{ user_users }}"
+  when: item.state | default("present") == "present"
+
+- name: add and remove users
+  user:
+    state: "{{ item.state | default('present') }}"
+    name: "{{ item.name }}"
+    uid: "{{ item.uid }}"
+    group: "{{ item.name }}"
+    groups: "{{ item.groups | default() }}"
+    comment: "{{ item.comment }}"
+    home: "{{ item.home | default('/home/' + item.name) }}"
+    shell: "{{ item.shell | default('/bin/bash') }}"
+    login_class: "{{ item.class | default(omit) }}"
+    createhome: no
+  with_items: "{{ user_users }}"
+  notify: create home directories
+
+- name: remove groups
+  group:
+    state: absent
+    name: "{{ item.name }}"
+    gid: "{{ item.uid }}"
+  with_items: "{{ user_users }}"
+  when: item.state | default("present") == "absent"
