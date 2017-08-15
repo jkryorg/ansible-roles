@@ -1,0 +1,38 @@
+---
+- name: install mongodb packages
+  package:
+      name: "{{ item }}"
+      state: installed
+  with_items:
+      - mongodb
+      - mongodb-server
+
+- name: Create a data directory for Mongodb
+  file:
+    path: "{{ mongodb_datadir }}"
+    state: directory
+    owner: mongodb
+    group: mongodb
+    mode: 0770
+
+- name: create /srv/mongodb symlink
+  file:
+    state: link
+    src: "{{ mongodb_datadir }}"
+    dest: "/srv/mongodb"
+  when: mongodb_datadir != "/srv/mongodb"
+
+- name: Put config file in place
+  copy:
+    src: mongod.conf
+    dest: "/etc/mongod.conf"
+    mode: 0644
+    owner: root
+    group: "{{ ansible_wheel }}"
+  notify: restart mongodb
+
+- name: enable mongod service
+  service:
+    name: mongod
+    state: started
+    enabled: yes
