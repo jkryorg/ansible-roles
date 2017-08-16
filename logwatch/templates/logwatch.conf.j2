@@ -1,0 +1,15 @@
+# {{ ansible_managed }}
+{% if logwatch_mailto is defined %}
+MailTo = {{ logwatch_mailto }}
+{% endif %}
+{% if logwatch_mailfrom is defined %}
+MailFrom = {{ logwatch_mailfrom }}
+{% endif %}
+{% if logwatch_level is defined %}
+Detail = {{ logwatch_level }}
+{% endif %}
+{% for service in logwatch_services %}
+Service = {{ service }}
+{% endfor %}
+
+
