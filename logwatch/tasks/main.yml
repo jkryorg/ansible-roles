@@ -1,0 +1,15 @@
+---
+- block:
+  - name: install logwatch package
+    package:
+      name: logwatch
+      state: installed
+
+  - name: configure logwatch
+    template:
+      src: logwatch.conf.j2
+      dest: /etc/logwatch/conf/logwatch.conf
+      mode: 0644
+      owner: root
+      group: "{{ ansible_wheel }}"
+  when: ansible_system == "Linux"
