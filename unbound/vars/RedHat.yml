@@ -1,0 +1,3 @@
+---
+unbound_confdir: /etc/unbound
+unbound_template: unbound.conf.redhat.j2

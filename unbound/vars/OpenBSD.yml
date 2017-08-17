@@ -1,0 +1,3 @@
+---
+unbound_confdir: /var/unbound/etc
+unbound_template: unbound.conf.openbsd.j2
