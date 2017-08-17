@@ -4,7 +4,5 @@
     name: "{{ opensmtpd_service }}"
     state: restarted
 
-- name: makemap aliases
-  command: makemap aliases
-  args:
-    chdir: "{{ opensmtpd_aliases|dirname }}"
+- name: update aliases
+  command: smtpctl update table aliases
