@@ -1,0 +1,45 @@
+---
+- name: include OS-specific variables
+  include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_os_family }}.yml"
+    - default.yml
+
+- name: install unbound package
+  package:
+    name: "{{ unbound_package }}"
+    state: installed
+  when: unbound_package is defined
+
+- name: configure unbound
+  template:
+    src: "{{ unbound_template }}"
+    dest: "{{ unbound_confdir }}/unbound.conf"
+    mode: 0644
+    owner: root
+    group: "{{ ansible_wheel }}"
+  notify: restart unbound
+
+- name: create local data directory
+  file:
+    state: directory
+    path: "{{ unbound_confdir }}/local.d"
+    mode: 0755
+    owner: root
+    group: "{{ ansible_wheel }}"
+
+- name: copy local data
+  copy:
+    src: "{{ unbound_local_src }}"
+    dest: "{{ unbound_confdir }}/local.d/local.conf"
+    mode: 0644
+    owner: root
+    group: "{{ ansible_wheel }}"
+  when: unbound_local_src is defined
+  notify: reload unbound
+
+- name: enable unbound service
+  service:
+    name: unbound
+    state: started
+    enabled: yes
