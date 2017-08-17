@@ -1,0 +1,13 @@
+---
+- name: copy package
+  copy:
+    src: "{{ opencollab_package }}"
+    dest: "{{ ansible_cache }}/{{ opencollab_package | basename }}"
+    mode: 0600
+    owner: root
+    group: "{{ ansible_wheel }}"
+
+- name: install package
+  pip:
+    name: "{{ ansible_cache }}/{{ opencollab_package | basename }}"
+    extra_args: --no-index
