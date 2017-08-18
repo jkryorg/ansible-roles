@@ -53,8 +53,7 @@
 
 - name: Check nginx configuration
   command: "nginx -t"
-  register: result
-  changed_when: "result.rc != 0"
+  changed_when: false
   check_mode: no
 
 - name: Enable nginx service
