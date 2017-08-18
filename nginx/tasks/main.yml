@@ -51,7 +51,13 @@
       - reload nginx
   when: nginx_remove_unmanaged
 
-- name: enable nginx service
+- name: Check nginx configuration
+  command: "nginx -t"
+  register: result
+  changed_when: "result.rc != 0"
+  check_mode: no
+
+- name: Enable nginx service
   service:
     name: nginx
     state: started
