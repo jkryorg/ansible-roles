@@ -6,35 +6,35 @@
     - default.yml
 
 - block:
-  - name: install opensmtpd package
-    package:
-      name: "{{ opensmtpd_package }}"
-      state: installed
+    - name: install opensmtpd package
+      package:
+        name: "{{ opensmtpd_package }}"
+        state: installed
 
-  - name: set mta to opensmtpd
-    alternatives:
-      name: mta
-      path: /usr/sbin/sendmail.opensmtpd
+    - name: set mta to opensmtpd
+      alternatives:
+        name: mta
+        path: /usr/sbin/sendmail.opensmtpd
   when: opensmtpd_package is defined
 
 - block:
-  - name: install certificate
-    copy:
-      src: "{{ opensmtpd_cert_src }}"
-      dest: "{{ tls_certs }}/smtpd.crt"
-      mode: 0644
-      owner: root
-      group: "{{ ansible_wheel }}"
-    notify: restart opensmtpd
+    - name: install certificate
+      copy:
+        src: "{{ opensmtpd_cert_src }}"
+        dest: "{{ tls_certs }}/smtpd.crt"
+        mode: 0644
+        owner: root
+        group: "{{ ansible_wheel }}"
+      notify: restart opensmtpd
 
-  - name: install private key
-    copy:
-      src: "{{ opensmtpd_key_src }}"
-      dest: "{{ tls_private }}/smtpd.key"
-      mode: 0600
-      owner: root
-      group: "{{ ansible_wheel }}"
-    notify: restart opensmtpd
+    - name: install private key
+      copy:
+        src: "{{ opensmtpd_key_src }}"
+        dest: "{{ tls_private }}/smtpd.key"
+        mode: 0600
+        owner: root
+        group: "{{ ansible_wheel }}"
+      notify: restart opensmtpd
   when:
     - opensmtpd_cert_src is defined
     - opensmtpd_key_src is defined

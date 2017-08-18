@@ -1,4 +1,4 @@
 ---
 dependencies:
-- { role: ansible_vars }
-- { role: ansible_cache }
+  - { role: ansible_vars }
+  - { role: ansible_cache }

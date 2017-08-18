@@ -1,37 +1,37 @@
 ---
 - block:
-  - name: include OS-specific variables
-    include_vars: "{{ ansible_os_family }}.yml"
+    - name: include OS-specific variables
+      include_vars: "{{ ansible_os_family }}.yml"
 
-  - name: install psacct package
-    package:
-      name: "{{ psacct_package }}"
-      state: installed
+    - name: install psacct package
+      package:
+        name: "{{ psacct_package }}"
+        state: installed
 
-  - name: enable psacct service
-    service:
-      name: "{{ psacct_service }}"
-      state: started
-      enabled: yes
+    - name: enable psacct service
+      service:
+        name: "{{ psacct_service }}"
+        state: started
+        enabled: yes
   when: ansible_system == "Linux"
 
 - block:
-  - name: create /var/account
-    file:
-      state: directory
-      path: /var/account
-      mode: 0750
-      owner: root
-      group: wheel
+    - name: create /var/account
+      file:
+        state: directory
+        path: /var/account
+        mode: 0750
+        owner: root
+        group: wheel
 
-  - name: turn on accounting
-    shell: touch /var/account/acct && accton /var/account/acct
-    args:
-      creates: /var/account/acct
-      warn: no
+    - name: turn on accounting
+      shell: touch /var/account/acct && accton /var/account/acct
+      args:
+        creates: /var/account/acct
+        warn: no
 
-  - name: enable accounting service
-    service:
-      name: accounting
-      enabled: yes
+    - name: enable accounting service
+      service:
+        name: accounting
+        enabled: yes
   when: ansible_system == "OpenBSD"

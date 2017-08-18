@@ -1,5 +1,5 @@
 ---
 dependencies:
-- { role: ansible_vars }
-- { role: tls }
-- { role: spamassassin, when: dovecot_sieve }
+  - { role: ansible_vars }
+  - { role: tls }
+  - { role: spamassassin, when: dovecot_sieve }

@@ -1,5 +1,5 @@
 ---
 dovecot_doveadm: /usr/local/bin/doveadm
-dovecot_last_valid_uid: 32766 # last uid before nobody
+dovecot_last_valid_uid: 32766  # last uid before nobody
 dovecot_sieve_filters:
   - /usr/local/bin/spamc

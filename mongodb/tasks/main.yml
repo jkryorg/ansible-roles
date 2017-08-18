@@ -1,11 +1,11 @@
 ---
 - name: install mongodb packages
   package:
-      name: "{{ item }}"
-      state: installed
+    name: "{{ item }}"
+    state: installed
   with_items:
-      - mongodb
-      - mongodb-server
+    - mongodb
+    - mongodb-server
 
 - name: Create a data directory for Mongodb
   file:

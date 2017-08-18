@@ -11,60 +11,60 @@
     state: installed
 
 - block:
-  - name: install certificate
-    copy:
-      src: "{{ dovecot_cert_src }}"
-      dest: "{{ tls_certs }}/dovecot.crt"
-      mode: 0644
-      owner: root
-      group: "{{ ansible_wheel }}"
-    notify: restart dovecot
+    - name: install certificate
+      copy:
+        src: "{{ dovecot_cert_src }}"
+        dest: "{{ tls_certs }}/dovecot.crt"
+        mode: 0644
+        owner: root
+        group: "{{ ansible_wheel }}"
+      notify: restart dovecot
 
-  - name: install private key
-    copy:
-      src: "{{ dovecot_key_src }}"
-      dest: "{{ tls_private }}/dovecot.key"
-      mode: 0600
-      owner: root
-      group: "{{ ansible_wheel }}"
-    notify: restart dovecot
+    - name: install private key
+      copy:
+        src: "{{ dovecot_key_src }}"
+        dest: "{{ tls_private }}/dovecot.key"
+        mode: 0600
+        owner: root
+        group: "{{ ansible_wheel }}"
+      notify: restart dovecot
   when:
     - dovecot_cert_src is defined
     - dovecot_key_src is defined
 
 - block:
-  - name: install dovecot-pigeonhole package
-    package:
-      name: dovecot-pigeonhole
-      state: installed
+    - name: install dovecot-pigeonhole package
+      package:
+        name: dovecot-pigeonhole
+        state: installed
 
-  - name: create sieve directories
-    file:
-      state: directory
-      path: "{{ item }}"
-      mode: 0755
-      owner: root
-      group: "{{ ansible_wheel }}"
-    with_items:
-      - /etc/dovecot/sieve
-      - /etc/dovecot/sieve/filter.d
+    - name: create sieve directories
+      file:
+        state: directory
+        path: "{{ item }}"
+        mode: 0755
+        owner: root
+        group: "{{ ansible_wheel }}"
+      with_items:
+        - /etc/dovecot/sieve
+        - /etc/dovecot/sieve/filter.d
 
-  - name: enable sieve filters
-    file:
-      state: link
-      src: "{{ item }}"
-      dest: "/etc/dovecot/sieve/filter.d/{{ item | basename }}"
-    with_items: "{{ dovecot_sieve_filters }}"
+    - name: enable sieve filters
+      file:
+        state: link
+        src: "{{ item }}"
+        dest: "/etc/dovecot/sieve/filter.d/{{ item | basename }}"
+      with_items: "{{ dovecot_sieve_filters }}"
 
-  - name: install sieve scripts
-    copy:
-      src: "{{ item }}"
-      dest: "/etc/dovecot/sieve/{{ item | basename }}"
-      mode: 0644
-      owner: root
-      group: "{{ ansible_wheel }}"
-    with_items: "{{ dovecot_sieve_scripts }}"
-    notify: compile sieve scripts
+    - name: install sieve scripts
+      copy:
+        src: "{{ item }}"
+        dest: "/etc/dovecot/sieve/{{ item | basename }}"
+        mode: 0644
+        owner: root
+        group: "{{ ansible_wheel }}"
+      with_items: "{{ dovecot_sieve_scripts }}"
+      notify: compile sieve scripts
   when: dovecot_sieve
 
 - name: configure ssl

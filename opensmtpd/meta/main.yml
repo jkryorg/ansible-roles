@@ -1,4 +1,4 @@
 ---
 dependencies:
-- { role: ansible_vars }
-- { role: tls }
+  - { role: ansible_vars }
+  - { role: tls }
