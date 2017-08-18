@@ -1,11 +1,12 @@
 #jinja2: lstrip_blocks: "True", trim_blocks: "True"
 # {{ ansible_managed }}
-{% for host in hostvars|sort %}
+{% for host, vars in hostvars.iteritems() %}
+  {% set hostnames = [host, host.split(".")[0]] | unique | join(",") %}
   {% for key, keytype in [("ansible_ssh_host_key_rsa_public", "ssh-rsa"),
-      ("ansible_ssh_host_key_ecdsa_public", "ecdsa-sha2-nistp256"),
-      ("ansible_ssh_host_key_ed25519_public", "ssh-ed25519")] %}
-    {% if hostvars[host][key] is defined %}
-{{ hostvars[host]["ansible_nodename"] }},{{ hostvars[host]["ansible_hostname"] }} {{ keytype }} {{ hostvars[host][key] }}
+                          ("ansible_ssh_host_key_ecdsa_public", "ecdsa-sha2-nistp256"),
+                          ("ansible_ssh_host_key_ed25519_public", "ssh-ed25519")] %}
+    {% if vars[key] is defined %}
+{{ hostnames }} {{ keytype }} {{ vars[key] }}
     {% endif %}
   {% endfor %}
 {% endfor %}
