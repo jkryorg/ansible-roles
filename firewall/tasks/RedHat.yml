@@ -1,13 +1,20 @@
 ---
+- name: include OS-specific variables
+  include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_os_family }}-{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family }}.yml"
+
 - name: remove firewalld
   package:
     name: firewalld
     state: removed
 
-- name: install iptables-services
+- name: install iptables packages
   package:
-    name: iptables-services
+    name: "{{ item }}"
     state: installed
+  with_items: "{{ firewall_packages }}"
 
 - name: copy iptables config
   template:
@@ -20,7 +27,7 @@
   with_items:
     - iptables
     - ip6tables
-  when: firewall_src[item] is defined
+  when: firewall_src is defined
 
 - name: create iptables config from template
   template:
@@ -33,7 +40,7 @@
   with_items:
     - iptables
     - ip6tables
-  when: firewall_src[item] is not defined
+  when: firewall_src is not defined
 
 - name: enable iptables service
   service:
