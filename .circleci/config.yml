@@ -1,9 +1,10 @@
+---
 version: 2
 jobs:
-   build:
-     docker:
-       - image: circleci/python:2
-     steps:
-       - checkout
-       - run: sudo pip install ansible-lint
-       - run: find . -mindepth 1 -maxdepth 1 -type d '!' -name '.*' -execdir ansible-lint -v '{}' +
+  build:
+    docker:
+      - image: circleci/python:2
+    steps:
+      - checkout
+      - run: sudo pip install ansible-lint yamllint
+      - run: make lint
