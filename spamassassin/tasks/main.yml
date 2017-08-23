@@ -15,7 +15,7 @@
     name: spamassassin
     state: started
     enabled: yes
-    arguments: "{{ spamassassin_arguments | default() }}"
+    arguments: "{{ spamassassin_arguments | default(omit) }}"
 
 - name: add sa-update cron job
   cron:
