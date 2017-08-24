@@ -1,0 +1,6 @@
+# {{ ansible_managed }}
+# Everything goes to all.log
+*.*					/srv/log/all.log
+
+# Remote logs only go in all.log
+:fromhost-ip, !isequal, "127.0.0.1"	~

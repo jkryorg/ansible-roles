@@ -1,0 +1,11 @@
+---
+rsyslog_all: false
+rsyslog_listen_tcp: false
+rsyslog_listen_udp: false
+rsyslog_resolve: false
+rsyslog_tls: true
+rsyslog_arguments: -x -c 5
+rsyslog_datadir: /srv/log
+rsyslog_cacert: "{{ tls_certs }}/rsyslog-ca.crt"
+rsyslog_cert: "{{ tls_certs }}/rsyslog.crt"
+rsyslog_key: "{{ tls_private }}/rsyslog.key"

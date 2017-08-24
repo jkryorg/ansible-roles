@@ -1,0 +1,98 @@
+---
+- name: include OS-specific variables
+  include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_os_family }}-{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family }}.yml"
+
+- name: install rsyslog package
+  package:
+    name: rsyslog
+    state: installed
+
+- name: configure rsyslog
+  template:
+    src: rsyslog.conf.j2
+    dest: /etc/rsyslog.conf
+    mode: 0644
+    owner: root
+    group: root
+  notify: restart rsyslog
+
+- block:
+    - name: install rsyslog-gnutls package
+      package:
+        name: rsyslog-gnutls
+        state: installed
+
+    - name: configure tls
+      template:
+        src: 00-tls.conf.j2
+        dest: /etc/rsyslog.d/00-tls.conf
+        mode: 0644
+        owner: root
+        group: root
+      notify: restart rsyslog
+  when: rsyslog_tls and (rsyslog_listen_tcp or rsyslog_remote_tcp is defined)
+
+- name: configure listening
+  template:
+    src: 10-listen.conf.j2
+    dest: /etc/rsyslog.d/10-listen.conf
+    mode: 0644
+    owner: root
+    group: root
+  notify: restart rsyslog
+  when: rsyslog_listen_tcp or rsyslog_listen_udp
+
+- block:
+    - name: create data directory
+      file:
+        state: directory
+        path: "{{ item }}"
+        mode: 0700
+        owner: root
+        group: root
+      with_items:
+        - "{{ rsyslog_datadir }}"
+        - "{{ rsyslog_datadir }}/archive"
+
+    - name: create /srv/log symlink
+      file:
+        state: link
+        src: "{{ rsyslog_datadir }}"
+        dest: "/srv/rsyslog"
+      when: rsyslog_datadir != "/srv/log"
+
+    - name: configure all.log
+      template:
+        src: 20-all.conf.j2
+        dest: /etc/rsyslog.d/00-all.conf
+        mode: 0644
+        owner: root
+        group: root
+      notify: restart rsyslog
+  when: rsyslog_all
+
+- name: configure remote logging
+  template:
+    src: 30-remote.conf.j2
+    dest: /etc/rsyslog.d/30-remote.conf
+    mode: 0644
+    owner: root
+    group: root
+  notify: restart rsyslog
+  when: rsyslog_remote_tcp is defined or rsyslog_remote_udp is defined
+
+- name: configure service arguments
+  lineinfile:
+    path: /etc/sysconfig/rsyslog
+    regexp: '^SYSLOGD_OPTIONS='
+    line: 'SYSLOGD_OPTIONS="{{ rsyslog_arguments }}"'
+  notify: restart rsyslog
+
+- name: enable rsyslog service
+  service:
+    name: rsyslog
+    state: started
+    enabled: yes
