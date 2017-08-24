@@ -1,0 +1,18 @@
+#jinja2: lstrip_blocks: "True", trim_blocks: "True"
+# {{ ansible_managed }}
+{% if rsyslog_listen_udp %}
+# Provides UDP syslog reception
+$ModLoad imudp.so
+$UDPServerRun 514
+{% endif %}
+{% if rsyslog_listen_tcp %}
+# Provides TCP syslog reception
+$ModLoad imtcp.so
+  {% if rsyslog_tls %}
+$InputTCPServerStreamDriverMode 1
+$InputTCPServerStreamDriverAuthMode x509/certvalid
+$InputTCPServerRun 6514
+  {% else %}
+$InputTCPServerRun 514
+  {% endif %}
+{% endif %}

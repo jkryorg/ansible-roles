@@ -1,0 +1,5 @@
+# {{ ansible_managed }}
+$DefaultNetstreamDriver gtls
+$DefaultNetstreamDriverCAFile {{ rsyslog_cacert }}
+$DefaultNetstreamDriverCertFile {{ rsyslog_cert }}
+$DefaultNetstreamDriverKeyFile {{ rsyslog_key }}
