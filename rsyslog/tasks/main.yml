@@ -72,6 +72,22 @@
         owner: root
         group: root
       notify: restart rsyslog
+
+    - name: install logarchiver
+      copy:
+        src: files/logarchiver.sh
+        dest: /usr/local/sbin/logarchiver
+        mode: 0755
+        owner: root
+        group: root
+
+    - name: add logarchiver cron job
+      cron:
+        name: logarchiver
+        user: root
+        hour: 0
+        minute: 0
+        job: "/usr/local/sbin/logarchiver /srv/log all.log > /dev/null"
   when: rsyslog_all
 
 - name: configure remote logging
