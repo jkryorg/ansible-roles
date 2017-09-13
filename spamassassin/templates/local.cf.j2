@@ -1,0 +1,8 @@
+# {{ ansible_managed }}
+report_safe 0
+required_hits 5
+rewrite_header Subject [SPAM]
+
+{% for network in spamassassin_trusted_networks %}
+trusted_networks {{ network }}
+{% endfor %}

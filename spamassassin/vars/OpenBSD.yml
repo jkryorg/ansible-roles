@@ -1,4 +1,4 @@
 ---
 spamassassin_package: p5-Mail-SpamAssassin
 spamassassin_arguments: -u _spamdaemon -P -x -m 10
-spamassassin_update: /usr/local/bin/sa-update && rcctl reload spamassassin >/dev/null
+spamassassin_update: /usr/local/bin/sa-update && rcctl restart spamassassin >/dev/null

@@ -10,6 +10,15 @@
     name: "{{ spamassassin_package }}"
     state: installed
 
+- name: configure spamassassin
+  template:
+    src: local.cf.j2
+    dest: /etc/mail/spamassassin/local.cf
+    mode: 0644
+    owner: root
+    group: "{{ ansible_wheel }}"
+  notify: restart spamassassin
+
 - name: enable spamassassin service
   service:
     name: spamassassin
