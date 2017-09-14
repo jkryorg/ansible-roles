@@ -3,5 +3,5 @@ ssl = required
 ssl_cert = <{{ dovecot_cert }}
 ssl_key = <{{ dovecot_key }}
 ssl_protocols = !SSLv2 !SSLv3
-ssl_cipher_list = {{ tls_modern_ciphersuites }}
+ssl_cipher_list = {{ tls_intermediate_ciphersuites }}
 ssl_prefer_server_ciphers = yes
