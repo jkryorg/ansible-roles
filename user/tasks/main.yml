@@ -17,6 +17,7 @@
     comment: "{{ item.comment }}"
     home: "{{ item.home | default('/home/' + item.name) }}"
     shell: "{{ item.shell | default(user_default_shell) }}"
+    password: "{{ item.password | default('*************') }}"
     login_class: "{{ item.class | default(omit) }}"
     createhome: no
   with_items: "{{ user_users }}"
