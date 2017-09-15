@@ -18,15 +18,16 @@ mdbox_rotate_interval = 10d
 lda_mailbox_autocreate = yes
 lda_mailbox_autosubscribe = yes
 
+# enable imap compression
 protocol imap {
   mail_plugins = $mail_plugins imap_zlib
 }
 {% if dovecot_sieve %}
 
+# enable sieve
 protocol lda {
   mail_plugins = $mail_plugins sieve
 }
-
 protocol lmtp {
   mail_plugins = $mail_plugins sieve
 }
@@ -42,7 +43,7 @@ plugin {
 }
 {% endif %}
 
-# disable plain text imap and pop3
+# disable plain text pop3 and imap
 service pop3-login {
   inet_listener pop3 {
     port = 0
@@ -53,7 +54,14 @@ service imap-login {
     port = 0
   }
 }
+# disable legacy managesieve
+service managesieve-login {
+  inet_listener sieve_deprecated {
+    port = 0
+  }
+}
 {% if dovecot_add_config is defined %}
 
+# local configuration
 {{ dovecot_add_config }}
 {%- endif %}
