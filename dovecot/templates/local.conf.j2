@@ -35,6 +35,7 @@ plugin {
   sieve_plugins = sieve_extprograms
   sieve_global_extensions = +vnd.dovecot.filter
   sieve_filter_bin_dir = /etc/dovecot/sieve/filter.d
+  sieve_filter_exec_timeout = 20s
 
   sieve_before = /etc/dovecot/sieve/before.sieve
   sieve_default = /etc/dovecot/sieve/default.sieve
