@@ -5,7 +5,7 @@
     state: installed
   with_items:
     - docker
-    - python-docker-py
+    - docker-compose
 
 - name: start docker service
   service:
