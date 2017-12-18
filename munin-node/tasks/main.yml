@@ -1,0 +1,29 @@
+---
+- name: include OS-specific variables
+  include_vars: "{{ ansible_os_family }}.yml"
+
+- name: install munin-node package
+  package:
+    name: munin-node
+    state: installed
+
+- name: install perl Net-SSLeay package
+  package:
+    name: "{{ munin_ssl_package }}"
+    state: installed
+
+- name: Enable munin-node service
+  service:
+    name: "{{ munin_node_service }}"
+    state: started
+    enabled: yes
+
+- name: Configure munin-node
+  template:
+    src: munin-node.conf.j2
+    dest: /etc/munin/munin-node.conf
+    mode: 0644
+    owner: root
+    group: "{{ ansible_wheel }}"
+  notify:
+    - munin-node configure
