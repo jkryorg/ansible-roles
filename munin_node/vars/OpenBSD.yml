@@ -1,0 +1,4 @@
+---
+munin_ssl_package: p5-Net-SSLeay
+munin_node_service: munin_node
+munin_node_log_file: /var/log/munin/munin-node.log

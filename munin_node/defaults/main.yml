@@ -1,0 +1,7 @@
+---
+# Munin requires IPs be added as regular expressions.
+munin_node_allowed_ips:
+  - '^127\.0\.0\.1$'
+munin_node_cacert: "{{ tls_certs }}/ansible-ca.crt"
+munin_node_cert: "{{ tls_certs }}/{{ inventory_hostname }}.crt"
+munin_node_key: "{{ tls_private }}/{{ inventory_hostname }}.key"

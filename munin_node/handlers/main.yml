@@ -1,0 +1,11 @@
+---
+- name: munin-node configure
+  shell: munin-node-configure --shell --remove-also 2>/dev/null | /bin/sh
+  environment:
+    PATH: /bin:/usr/bin:/sbin:/usr/sbin:/usr/local/bin:/usr/local/sbin
+  notify: munin-node restart
+
+- name: munin-node restart
+  service:
+    name: "{{ munin_node_service }}"
+    state: restarted
