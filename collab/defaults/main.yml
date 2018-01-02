@@ -1,0 +1,5 @@
+---
+collab_datadir: /srv/wikis
+collab_threads: 20
+collab_sites: ["{{ ansible_nodename }}"]
+collab_jabberdomains: ["{{ ansible_nodename }}"]

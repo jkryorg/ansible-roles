@@ -1,0 +1,1175 @@
+--- ./MoinMoin/action/newaccount.py.orig	2014-10-17 19:45:32.000000000 +0000
++++ ./MoinMoin/action/newaccount.py	2017-12-04 11:55:24.556866415 +0000
+@@ -31,7 +31,8 @@ def _create_user(request):
+ 
+     # Require non-empty name
+     try:
+-        theuser.name = form['name']
++        name = wikiutil.clean_input(form.get('email', ['']))
++        theuser.name = name.strip()
+     except KeyError:
+         return _("Empty user name. Please enter a user name.")
+ 
+@@ -104,12 +105,9 @@ def _create_form(request):
+ 
+     row = html.TR()
+     tbl.append(row)
+-    row.append(html.TD().append(html.STRONG().append(
+-                                  html.Text(_("Name")))))
+-    cell = html.TD()
+-    row.append(cell)
+-    cell.append(html.INPUT(type="text", size="36", name="name"))
+-    cell.append(html.Text(' ' + _("(Use FirstnameLastname)")))
++    row.append(html.TD().append(html.STRONG().append(html.Text(_("Email")))))
++    row.append(html.TD().append(html.INPUT(type="text", size="36",
++                                           name="email")))
+ 
+     row = html.TR()
+     tbl.append(row)
+@@ -125,12 +123,6 @@ def _create_form(request):
+     row.append(html.TD().append(html.INPUT(type="password", size="36",
+                                            name="password2")))
+ 
+-    row = html.TR()
+-    tbl.append(row)
+-    row.append(html.TD().append(html.STRONG().append(html.Text(_("Email")))))
+-    row.append(html.TD().append(html.INPUT(type="text", size="36",
+-                                           name="email")))
+-
+     textcha = TextCha(request)
+     if textcha.is_enabled():
+         row = html.TR()
+@@ -159,7 +151,7 @@ def execute(pagename, request):
+             found = True
+             break
+ 
+-    if not found:
++    if not found and False:
+         # we will not have linked, so forbid access
+         request.makeForbidden(403, 'No MoinAuth in auth list')
+         return
+--- ./MoinMoin/action/recoverpass.py.orig	2014-10-17 19:45:32.000000000 +0000
++++ ./MoinMoin/action/recoverpass.py	2017-12-04 11:55:24.557866415 +0000
+@@ -70,15 +70,9 @@ def _create_form(request):
+ 
+     row = html.TR()
+     tbl.append(row)
+-    row.append(html.TD().append(html.STRONG().append(html.Text(_("Username")))))
+-    row.append(html.TD().append(html.INPUT(type="text", size="36",
+-                                           name="name")))
+-
+-    row = html.TR()
+-    tbl.append(row)
+     row.append(html.TD().append(html.STRONG().append(html.Text(_("Email")))))
+     row.append(html.TD().append(html.INPUT(type="text", size="36",
+-                                           name="email")))
++                                           name="name")))
+ 
+     row = html.TR()
+     tbl.append(row)
+@@ -111,7 +105,7 @@ def _create_token_form(request, name=Non
+ 
+     row = html.TR()
+     tbl.append(row)
+-    row.append(html.TD().append(html.STRONG().append(html.Text(_("Username")))))
++    row.append(html.TD().append(html.STRONG().append(html.Text(_("Email")))))
+     value = name or ''
+     row.append(html.TD().append(html.INPUT(type='text', size="36",
+                                            name="name", value=value)))
+--- ./MoinMoin/auth/__init__.py.orig	2014-10-17 19:45:32.000000000 +0000
++++ ./MoinMoin/auth/__init__.py	2017-12-04 11:55:24.557866415 +0000
+@@ -371,7 +371,7 @@ class GivenAuth(BaseAuth):
+             auth_username = self.transform_username(auth_username)
+             logging.debug("auth_username (after decode/transform) = %r" % auth_username)
+             u = user.User(request, auth_username=auth_username,
+-                          auth_method=self.name, auth_attribs=('name', 'password'))
++                          auth_method=self.name, auth_attribs=('name'))
+ 
+         logging.debug("u: %r" % u)
+         if u and self.autocreate:
+--- ./MoinMoin/config/__init__.py.orig	2014-10-17 19:45:32.000000000 +0000
++++ ./MoinMoin/config/__init__.py	2017-12-04 11:55:24.558866414 +0000
+@@ -25,7 +25,7 @@ umask = 0770
+ # list of acceptable password hashing schemes for cfg.password_scheme,
+ # here we only give reasonably good schemes, which is passlib (if we
+ # have passlib) and ssha (if we only have builtin stuff):
+-password_schemes_configurable = ['{PASSLIB}', '{SSHA}', ]
++password_schemes_configurable = ['{PASSLIB}', '{SSHA}', '{SHA}' ]
+ 
+ # ordered list of supported password hashing schemes, best (passlib) should be
+ # first, best builtin one should be second. this is what we support if we
+@@ -58,6 +58,9 @@ page_invalid_chars_regex = re.compile(
+     ur"""
+     \u0000 | # NULL
+ 
++    \# | # http://tools.ietf.org/html/rfc3986#section-3.3
++    \? |
++
+     # Bidi control characters
+     \u202A | # LRE
+     \u202B | # RLE
+--- ./MoinMoin/config/multiconfig.py.orig	2014-10-17 19:45:32.000000000 +0000
++++ ./MoinMoin/config/multiconfig.py	2017-12-04 11:55:24.559866413 +0000
+@@ -12,6 +12,7 @@ import re
+ import os
+ import sys
+ import time
++import imp
+ 
+ from MoinMoin import log
+ logging = log.getLogger(__name__)
+@@ -34,6 +35,25 @@ _farmconfig_mtime = None
+ _config_cache = {}
+ 
+ 
++def _findConfigModule(name):
++    """ Try to find config module or raise ImportError
++
++    Return first module that is a single file, skipping packages with
++    colliding names.
++    """
++    for path in sys.path:
++        if not path:
++            continue
++        try:
++            fp, pathname, description = imp.find_module(name, [path])
++            if not fp:
++                continue
++            return fp, pathname, description
++        except ImportError:
++            continue
++    raise ImportError('No module named %s' % name)
++
++
+ def _importConfigModule(name):
+     """ Import and return configuration module and its modification time
+ 
+@@ -45,7 +65,8 @@ def _importConfigModule(name):
+     @return: module, modification time
+     """
+     try:
+-        module = __import__(name, globals(), {})
++        fp, pathname, description = _findConfigModule(name)
++        module = imp.load_module(name, fp, pathname, description)
+         mtime = os.path.getmtime(module.__file__)
+     except ImportError:
+         raise
+--- ./MoinMoin/formatter/__init__.py.orig	2014-10-17 19:45:32.000000000 +0000
++++ ./MoinMoin/formatter/__init__.py	2017-12-04 11:55:24.559866413 +0000
+@@ -135,7 +135,10 @@ class FormatterBase:
+                 # Try to decode text. It might return junk, but we don't
+                 # have enough information with attachments.
+                 content = wikiutil.decodeUnknownInput(content)
+-                colorizer = Parser(content, self.request, filename=filename)
++                if '.csv' in getattr(Parser, 'extensions', list()):
++                    colorizer = Parser(content, self.request, filename=filename, format_args=kw.get('format_args', ''))
++                else:
++                    colorizer = Parser(content, self.request, filename=filename)
+                 colorizer.format(self)
+             except IOError:
+                 pass
+--- ./MoinMoin/formatter/text_html.py.orig	2014-10-17 19:45:32.000000000 +0000
++++ ./MoinMoin/formatter/text_html.py	2017-12-04 11:55:24.560866413 +0000
+@@ -6,12 +6,14 @@
+     @license: GNU GPL, see COPYING for details.
+ """
+ import os.path, re
++import urllib
++import urlparse
+ 
+ from MoinMoin import log
+ logging = log.getLogger(__name__)
+ 
+ from MoinMoin.formatter import FormatterBase
+-from MoinMoin import wikiutil, i18n
++from MoinMoin import wikiutil, i18n, config
+ from MoinMoin.Page import Page
+ from MoinMoin.action import AttachFile
+ from MoinMoin.support.python_compatibility import set
+@@ -474,16 +476,17 @@ class Formatter(FormatterBase):
+             del kw['generated']
+         if page is None:
+             page = Page(self.request, pagename, formatter=self)
+-        if self.request.user.show_nonexist_qm and on and not page.exists():
+-            self.pagelink_preclosed = True
+-            return (page.link_to(self.request, on=1, **kw) +
+-                    self.text("?") +
+-                    page.link_to(self.request, on=0, **kw))
++        if on and not page.exists():
++            kw['css_class'] = 'nonexistent'
++            if self.request.user.show_nonexist_qm:
++                self.pagelink_preclosed = True
++                return (page.link_to(self.request, on=1, **kw) +
++                        self.text("?") +
++                        page.link_to(self.request, on=0, **kw))
+         elif not on and self.pagelink_preclosed:
+             self.pagelink_preclosed = False
+             return ""
+-        else:
+-            return page.link_to(self.request, on=on, **kw)
++        return page.link_to(self.request, on=on, **kw)
+ 
+     def interwikilink(self, on, interwiki='', pagename='', **kw):
+         """
+@@ -534,12 +537,25 @@ class Formatter(FormatterBase):
+                 logging.warning("Deprecation warning: MoinMoin.formatter.text_html.url being called with do_escape=1/True parameter, please review caller.")
+             else:
+                 logging.warning("Deprecation warning: MoinMoin.formatter.text_html.url being called with do_escape=0/False parameter, please remove it from the caller.")
++
++        def quote_urlparts(url):
++            """
++            hrefs should be quoted as per RFC3986.
++            """
++            urlp = list(urlparse.urlparse(url))
++            for part in (2, 4):
++                if isinstance(urlp[part], unicode):
++                    urlp[part] = urlp[part].encode(config.charset)
++            urlp[2] = urllib.quote(urlp[2])
++            urlp[4] = urllib.urlencode(urlparse.parse_qs(urlp[4]), doseq=1)
++            return urlparse.urlunparse(urlp)
++
+         if on:
+             attrs = self._langAttr()
+ 
+             # Handle the URL mapping
+             if url is None and 'href' in kw:
+-                url = kw['href']
++                url = quote_urlparts(kw['href'])
+                 del kw['href']
+             if url is not None:
+                 url = wikiutil.mapURL(self.request, url)
+--- ./MoinMoin/macro/Include.py.orig	2014-10-17 19:45:33.000000000 +0000
++++ ./MoinMoin/macro/Include.py	2017-12-04 11:55:24.561866414 +0000
+@@ -1,31 +1,37 @@
+-# -*- coding: iso-8859-1 -*-
++# -*- coding: utf-8 -*-
+ """
+-    MoinMoin - Include macro
++    Include macro for MoinMoin/GraphingWiki
+ 
+-    This macro includes the formatted content of the given page(s). See
++    Partial rewrite of orginal Include macro.
+ 
+-        http://purl.net/wiki/moinmaster/HelpOnMacros/Include
+-
+-    for detailed docs.
++    New features:
++     * Including nonexisting pages with an editlink
++     * Specifying a template for editing, eg.
++     <<Include(Case183/nonexisting,,,editlink,template="HelpTemplate")>>
++     * Specifying a revision for included pages, eg.
++     <<Include(FrontPage,,,editlink,rev=1)>>
+ 
+     @copyright: 2000-2004 Juergen Hermann <jh@web.de>,
+-                2000-2001 Richard Jones <richard@bizarsoftware.com.au>
++                2000-2001 Richard Jones <richard@bizarsoftware.com.au>,
++                2009-2011 Juhani Eronen <exec@iki.fi>,
++                2015-2016 Mika Seppänen <mika.seppanen@iki.fi>
+     @license: GNU GPL, see COPYING for details.
+ """
+ 
+-#Dependencies = ["pages"] # included page
+-Dependencies = ["time"] # works around MoinMoinBugs/TableOfContentsLacksLinks
++Dependencies = ["time"]  # works around MoinMoinBugs/TableOfContentsLacksLinks
+ 
+ generates_headings = True
+ 
+-import re, StringIO
++import re
++import StringIO
++
+ from MoinMoin import wikiutil
+ from MoinMoin.Page import Page
+ 
++from graphingwiki import actionname, id_escape, SEPARATOR
++from graphingwiki.util import render_error, render_warning
++from graphingwiki.util import form_writer as wr
+ 
+-_sysmsg = '<p><strong class="%s">%s</strong></p>'
+-
+-## keep in sync with TableOfContents macro!
+ _arg_heading = r'(?P<heading>,)\s*(|(?P<hquote>[\'"])(?P<htext>.+?)(?P=hquote))'
+ _arg_level = r',\s*(?P<level>\d*)'
+ _arg_from = r'(,\s*from=(?P<fquote>[\'"])(?P<from>.+?)(?P=fquote))?'
+@@ -35,23 +41,27 @@ _arg_items = r'(,\s*items=(?P<items>\d+)
+ _arg_skipitems = r'(,\s*skipitems=(?P<skipitems>\d+))?'
+ _arg_titlesonly = r'(,\s*(?P<titlesonly>titlesonly))?'
+ _arg_editlink = r'(,\s*(?P<editlink>editlink))?'
+-_args_re_pattern = r'^(?P<name>[^,]+)(%s(%s)?%s%s%s%s%s%s%s)?$' % (
++_arg_rev = r'(,\s*rev=(?P<rev>\d+))?'
++_arg_template = r'(,\s*template=(?P<tequot>[\'"])(?P<template>.+?)(?P=tequot))?'
++_args_re_pattern = r'^(?P<name>[^,]+)(%s(%s)?%s%s%s%s%s%s%s%s%s)?$' % (
+     _arg_heading, _arg_level, _arg_from, _arg_to, _arg_sort, _arg_items,
+-    _arg_skipitems, _arg_titlesonly, _arg_editlink)
++    _arg_skipitems, _arg_titlesonly, _arg_editlink, _arg_rev, _arg_template)
+ 
+ _title_re = r"^(?P<heading>\s*(?P<hmarker>=+)\s.*\s(?P=hmarker))$"
+ 
++
+ def extract_titles(body, title_re):
+     titles = []
+     for title, _ in title_re.findall(body):
+         h = title.strip()
+         level = 1
+-        while h[level:level+1] == '=':
++        while h[level:level + 1] == '=':
+             level += 1
+         title_text = h[level:-level].strip()
+         titles.append((title_text, level))
+     return titles
+ 
++
+ def execute(macro, text, args_re=re.compile(_args_re_pattern), title_re=re.compile(_title_re, re.M)):
+     request = macro.request
+     _ = request.getText
+@@ -63,7 +73,7 @@ def execute(macro, text, args_re=re.comp
+     # parse and check arguments
+     args = text and args_re.match(text)
+     if not args:
+-        return (_sysmsg % ('error', _('Invalid include arguments "%s"!')) % (text, ))
++        return render_error(_('Invalid include arguments "%s"!') % (text,))
+ 
+     # prepare including page
+     result = []
+@@ -79,11 +89,22 @@ def execute(macro, text, args_re=re.comp
+         try:
+             inc_match = re.compile(inc_name)
+         except re.error:
+-            pass # treat as plain page name
++            pass  # treat as plain page name
+         else:
+             # Get user filtered readable page list
+             pagelist = request.rootpage.getPageList(filter=inc_match.match)
+ 
++    specific_page = not inc_name.startswith("^")
++
++    rev = args.group("rev")
++    if specific_page and rev is not None:
++        try:
++            rev = int(rev)
++        except (ValueError, UnicodeDecodeError):
++            rev = None
++    else:
++        rev = None
++
+     # sort and limit page list
+     pagelist.sort()
+     sort_dir = args.group('sort')
+@@ -103,36 +124,48 @@ def execute(macro, text, args_re=re.comp
+     for inc_name in pagelist:
+         if not request.user.may.read(inc_name):
+             continue
++
+         if inc_name in this_page._macroInclude_pagelist:
+-            result.append(u'<p><strong class="error">Recursive include of "%s" forbidden</strong></p>' % (inc_name, ))
++            result.append(render_error(_('Recursive include of "%s" forbidden!') % (inc_name,)))
+             continue
+-        if skipitems:
++
++        if skipitems > 0:
+             skipitems -= 1
+             continue
++
+         fmt = macro.formatter.__class__(request, is_included=True)
+         fmt._base_depth = macro.formatter._base_depth
+-        inc_page = Page(request, inc_name, formatter=fmt)
+-        if not inc_page.exists():
+-            continue
++
++        if specific_page and rev is not None:
++            inc_page = Page(request, inc_name, formatter=fmt, rev=rev)
++        else:
++            inc_page = Page(request, inc_name, formatter=fmt)
++
+         inc_page._macroInclude_pagelist = this_page._macroInclude_pagelist
+ 
++        page_exists = inc_page.exists()
++
+         # check for "from" and "to" arguments (allowing partial includes)
+-        body = inc_page.get_raw_body() + '\n'
++        if page_exists:
++            body = inc_page.get_raw_body() + '\n'
++        else:
++            body = ""
++
+         from_pos = 0
+         to_pos = -1
+         from_re = args.group('from')
+-        if from_re:
++        if page_exists and from_re:
+             try:
+                 from_match = re.compile(from_re, re.M).search(body)
+             except re.error:
+-                ##result.append("*** fe=%s ***" % e)
+                 from_match = re.compile(re.escape(from_re), re.M).search(body)
+             if from_match:
+                 from_pos = from_match.end()
+             else:
+-                result.append(_sysmsg % ('warning', 'Include: ' + _('Nothing found for "%s"!')) % from_re)
++                result.append(render_warning(_('Include: Nothing found for "%s"!') % from_re))
++
+         to_re = args.group('to')
+-        if to_re:
++        if page_exists and to_re:
+             try:
+                 to_match = re.compile(to_re, re.M).search(body, from_pos)
+             except re.error:
+@@ -140,7 +173,7 @@ def execute(macro, text, args_re=re.comp
+             if to_match:
+                 to_pos = to_match.start()
+             else:
+-                result.append(_sysmsg % ('warning', 'Include: ' + _('Nothing found for "%s"!')) % to_re)
++                result.append(render_warning(_('Include: Nothing found for "%s"!') % to_re))
+ 
+         if titlesonly:
+             levelstack = []
+@@ -169,8 +202,6 @@ def execute(macro, text, args_re=re.comp
+ 
+         if from_pos or to_pos != -1:
+             inc_page.set_raw_body(body[from_pos:to_pos], modified=True)
+-        ##result.append("*** f=%s t=%s ***" % (from_re, to_re))
+-        ##result.append("*** f=%d t=%d ***" % (from_pos, to_pos))
+ 
+         if not hasattr(request, "_Include_backto"):
+             request._Include_backto = this_page.page_name
+@@ -204,9 +235,14 @@ def execute(macro, text, args_re=re.comp
+         strfile = StringIO.StringIO()
+         request.redirect(strfile)
+         try:
++            request.write(
++                request.formatter.div(True,
++                                      css_class='gwikiinclude',
++                                      id=id_escape(inc_name) + SEPARATOR))
+             inc_page.send_page(content_only=True,
+                                omit_footnotes=True,
+                                count_hit=False)
++            request.write(request.formatter.div(False))
+             result.append(strfile.getvalue())
+         finally:
+             request.redirect()
+@@ -218,17 +254,49 @@ def execute(macro, text, args_re=re.comp
+         else:
+             del this_page._macroInclude_pagelist[inc_name]
+ 
++        template = args.group("template")
++
+         # if no heading and not in print mode, then output a helper link
+         if editlink and not (level or print_mode):
+-            result.extend([
+-                macro.formatter.div(1, css_class="include-link"),
+-                inc_page.link_to(request, '[%s]' % (inc_name, ), css_class="include-page-link"),
+-                inc_page.link_to(request, '[%s]' % (_('edit'), ), css_class="include-edit-link", querystr={'action': 'edit', 'backto': request._Include_backto}),
+-                macro.formatter.div(0),
+-            ])
++            result.append(macro.formatter.div(1, css_class="include-link"))
++
++            if specific_page and not page_exists:
++                result.append("[%s]" % (inc_name,))
++                if template:
++                    result.append(inc_page.link_to(request, '[%s]' % (_('create'), ), css_class="include-edit-link", querystr={'action': 'edit', 'backto': request._Include_backto, 'template': template}))
++                else:
++                    out = wr('<form method="GET" action="%s">\n', 
++                             actionname(request, request._Include_backto))
++                    out += wr('<select name="template">\n')
++                    out += wr('<option value="">%s</option>\n', 
++                              _("No template"))
++
++                    # Get list of template pages readable by current user
++                    filterfn = request.cfg.cache.page_template_regexact.search
++                    templates = request.rootpage.getPageList(filter=filterfn)
++                    for i in templates:
++                        out += wr('<option value="%s">%s</option>\n', i, i)
++
++                    out += '</select>\n'
++                    out += '<input type="hidden" name="action" value="newpage">\n'
++                    out += wr('<input type="hidden" name="pagename" value="%s">\n', inc_name)
++                    out += wr('<input type="submit" value="%s">\n', _('create'))
++                    out += wr('</form>\n')
++                    result.append(out)
++            elif specific_page and rev is not None:
++                result.extend([
++                    inc_page.link_to(request, '[%s revision %d]' % (inc_name, rev), querystr={"action": "recall", "rev": str(rev)}, css_class="include-page-link"),
++                    inc_page.link_to(request, '[%s]' % (_('edit current version'), ), css_class="include-edit-link", querystr={'action': 'edit', 'backto': request._Include_backto}),
++                ])
++            else:
++                result.extend([
++                    inc_page.link_to(request, '[%s]' % (inc_name, ), css_class="include-page-link"),
++                    inc_page.link_to(request, '[%s]' % (_('edit'), ), css_class="include-edit-link", querystr={'action': 'edit', 'backto': request._Include_backto}),
++                ])
++                    
++            result.append(macro.formatter.div(0))
++
+         # XXX page.link_to is wrong now, it escapes the edit_icon html as it escapes normal text
+ 
+     # return include text
+     return ''.join(result)
+-
+-# vim:ts=4:sw=4:et
+--- ./MoinMoin/macro/RecentChanges.py.orig	2014-10-17 19:45:33.000000000 +0000
++++ ./MoinMoin/macro/RecentChanges.py	2017-12-04 11:55:24.562866414 +0000
+@@ -110,8 +110,12 @@ def format_page_edits(macro, lines, book
+     if request.cfg.show_names:
+         if len(lines) > 1:
+             counters = {}
++            editorcache = {}
+             for idx in range(len(lines)):
+-                name = lines[idx].getEditor(request)
++                editorkey = lines[idx].addr, lines[idx].hostname, lines[idx].userid
++                if editorkey not in editorcache:
++                    editorcache[editorkey] = line.getEditor(request)
++                name = editorcache[editorkey]
+                 if not name in counters:
+                     counters[name] = []
+                 counters[name].append(idx+1)
+@@ -228,6 +232,9 @@ def print_abandoned(macro):
+     output.append(request.theme.recentchanges_footer(d))
+     return ''.join(output)
+ 
++def filter_pages(request, pages):
++    readable = request.user.may.read
++    return filter(lambda lines: readable(lines[0].pagename), pages)
+ 
+ def macro_RecentChanges(macro, abandoned=False):
+     # handle abandoned keyword
+@@ -291,37 +298,36 @@ def macro_RecentChanges(macro, abandoned
+     day_count = 0
+ 
+     for line in log.reverse():
+-
+-        if not request.user.may.read(line.pagename):
+-            continue
+-
+         line.time_tuple = request.user.getTime(wikiutil.version2timestamp(line.ed_time_usecs))
+         day = line.time_tuple[0:3]
+         hilite = line.ed_time_usecs > (bookmark_usecs or line.ed_time_usecs)
+ 
+-        if ((this_day != day or (not hilite and not max_days))) and len(pages) > 0:
++        if this_day != day or (not hilite and not max_days):
+             # new day or bookmark reached: print out stuff
+             this_day = day
+             for p in pages:
+                 ignore_pages[p] = None
+-            pages = pages.values()
++            pages = filter_pages(request, pages.values())
+             pages.sort(cmp_lines)
+             pages.reverse()
+ 
+-            if request.user.valid:
+-                bmtime = pages[0][0].ed_time_usecs
+-                d['bookmark_link_html'] = page.link_to(request, _("Set bookmark"), querystr={'action': 'bookmark', 'time': '%d' % bmtime}, rel='nofollow')
+-            else:
+-                d['bookmark_link_html'] = None
+-            d['date'] = request.user.getFormattedDate(wikiutil.version2timestamp(pages[0][0].ed_time_usecs))
+-            output.append(request.theme.recentchanges_daybreak(d))
++            if len(pages) > 0:
++                if request.user.valid:
++                    bmtime = pages[0][0].ed_time_usecs
++                    d['bookmark_link_html'] = page.link_to(request, _("Set bookmark"), querystr={'action': 'bookmark', 'time': '%d' % bmtime}, rel='nofollow')
++                else:
++                    d['bookmark_link_html'] = None
++                d['date'] = request.user.getFormattedDate(wikiutil.version2timestamp(pages[0][0].ed_time_usecs))
++                output.append(request.theme.recentchanges_daybreak(d))
++
++                for p in pages:
++                    output.append(format_page_edits(macro, p, bookmark_usecs))
++
++                day_count += 1
++                if max_days and (day_count >= max_days):
++                    break
+ 
+-            for p in pages:
+-                output.append(format_page_edits(macro, p, bookmark_usecs))
+             pages = {}
+-            day_count += 1
+-            if max_days and (day_count >= max_days):
+-                break
+ 
+         elif this_day != day:
+             # new day but no changes
+@@ -340,16 +346,16 @@ def macro_RecentChanges(macro, abandoned
+         else:
+             pages[line.pagename] = [line]
+     else:
+-        if len(pages) > 0:
+-            # end of loop reached: print out stuff
+-            # XXX duplicated code from above
+-            # but above does not trigger if we have the first day in wiki history
+-            for p in pages:
+-                ignore_pages[p] = None
+-            pages = pages.values()
+-            pages.sort(cmp_lines)
+-            pages.reverse()
++        # end of loop reached: print out stuff
++        # XXX duplicated code from above
++        # but above does not trigger if we have the first day in wiki history
++        for p in pages:
++            ignore_pages[p] = None
++        pages = filter_pages(request, pages.values())
++        pages.sort(cmp_lines)
++        pages.reverse()
+ 
++        if len(pages) > 0:
+             if request.user.valid:
+                 bmtime = pages[0][0].ed_time_usecs
+                 d['bookmark_link_html'] = page.link_to(request, _("Set bookmark"), querystr={'action': 'bookmark', 'time': '%d' % bmtime}, rel='nofollow')
+--- ./MoinMoin/packages.py.orig	2014-10-17 19:45:33.000000000 +0000
++++ ./MoinMoin/packages.py	2017-12-04 11:55:24.563866414 +0000
+@@ -529,6 +529,12 @@ class ZipPackage(Package, ScriptEngine):
+ 
+ def main():
+     args = sys.argv
++
++    myusername=''
++    if (len(args) > 1) and (args[1] == '-u'):
++	args.pop(1)
++	myusername = args.pop(1)
++
+     if len(args)-1 not in (2, 3) or args[1] not in ('l', 'i'):
+         print >> sys.stderr, """MoinMoin Package Installer v%(version)i
+ 
+@@ -555,6 +561,8 @@ Example:
+     # Setup MoinMoin environment
+     from MoinMoin.web.contexts import ScriptContext
+     request = ScriptContext(url=request_url)
++    if myusername:
++        request.user = user.User(request, auth_username=myusername)
+ 
+     package = ZipPackage(request, packagefile)
+     if not package.isPackage():
+--- ./MoinMoin/PageEditor.py.orig	2014-10-17 19:45:32.000000000 +0000
++++ ./MoinMoin/PageEditor.py	2017-12-04 11:56:41.091865153 +0000
+@@ -17,7 +17,7 @@
+ """
+ 
+ import os, time, codecs, errno
+-
++import unicodedata
+ 
+ from MoinMoin import caching, config, wikiutil, error
+ from MoinMoin.Page import Page
+@@ -54,6 +54,17 @@ addLoadEvent(countdown)
+ </script>
+ """
+ 
++#############################################################################
++### Filtering unprintable characters from page content
++#############################################################################
++
++ALLOWED_CONTROL_CHARS = '\t\n\r'
++
++def filter_unprintable(text):
++    return ''.join(x for x in text 
++                   if (not unicodedata.category(x) in ['Cc', 'Cn', 'Cs']
++                       or x in ALLOWED_CONTROL_CHARS))
++
+ 
+ #############################################################################
+ ### PageEditor - Edit pages
+@@ -788,8 +799,10 @@ Try a different name.""", wiki=True) % (
+         u = request.user
+         obfuscated_email_address = encodeSpamSafeEmail(u.email)
+         signature = u.signature()
++        parent_page = Page(self.request, self.page_name).getParentPage()
+         variables = {
+             'PAGE': self.page_name,
++            'PARENT': (parent_page.page_name if parent_page is not None else self.page_name),
+             'TIMESTAMP': now,
+             'TIME': "<<DateTime(%s)>>" % now,
+             'DATE': "<<Date(%s)>>" % now,
+@@ -1066,6 +1079,26 @@ Try a different name.""", wiki=True) % (
+         """
+         request = self.request
+         _ = self._
++
++        # Depending on the configuration, filter unprintable
++        # characters from text content or warn of them. Unprintable
++        # characters are often undesired, and result from
++        # eg. copy-pasting text from productivity tools.
++        _handle_unprintable = getattr(self.request.cfg, 
++                                      'gwiki_handle_unprintable', '')
++        if _handle_unprintable in ['warn', 'filter']:
++            _newtext = filter_unprintable(newtext)
++            if _handle_unprintable == 'filter':
++                newtext = _newtext
++            elif _newtext != newtext:
++                _pos = 0
++                for i in len(_newtext):
++                    _pos = i
++                    if _newtext[i] != newtext[i]:
++                        break
++                raise self.SaveError(_("Bad character in text at position %s.")%
++                                     (_pos))
++
+         self._save_draft(newtext, rev, **kw)
+         action = kw.get('action', 'SAVE')
+         deleted = kw.get('deleted', False)
+--- ./MoinMoin/Page.py.orig	2014-10-17 19:45:32.000000000 +0000
++++ ./MoinMoin/Page.py	2017-12-04 11:55:24.565866414 +0000
+@@ -108,8 +108,7 @@ class ItemCache:
+             (for 'meta') or the complete cache ('pagelists').
+             @param request: the request object
+         """
+-        from MoinMoin.logfile import editlog
+-        elog = editlog.EditLog(request)
++        elog = request.editlog
+         old_pos = self.log_pos
+         new_pos, items = elog.news(old_pos)
+         if items:
+@@ -626,7 +625,12 @@ class Page(object):
+         """
+         return self.exists(domain='standard', includeDeleted=includeDeleted)
+ 
+-    def exists(self, rev=0, domain=None, includeDeleted=False):
++    def _in_backend(self):
++        if self.page_name in self.request.graphdata:
++            return self.request.graphdata.is_saved(self.page_name)
++        return 0
++
++    def exists(self, rev=0, domain=None, includeDeleted=False, includeBackend=True):
+         """ Does this page exist?
+ 
+         This is the lower level method for checking page existence. Use
+@@ -656,6 +660,12 @@ class Page(object):
+                     return True
+             return False
+         else:
++            # If it's in the backend, it exists
++            if self._in_backend():
++                return True
++            elif includeBackend:
++                return False
++
+             # Look for non-deleted pages only, using get_rev
+             if not rev and self.rev:
+                 rev = self.rev
+@@ -789,13 +799,20 @@ class Page(object):
+         @rtype: string
+         @return: formatted link
+         """
++        # Optimising closing of links
++        if kw.get('on', None) == 0:
++            formatter=getattr(self, 'formatter', None)
++            if formatter:
++                return formatter.url(0, '', None)
++
+         if not text:
+             text = self.split_title()
+         text = wikiutil.escape(text)
+ 
+-        # Add css class for non existing page
+-        if not self.exists():
+-            kw['css_class'] = 'nonexistent'
++        # Add css class for non existing page (if not done by formatter.pagelink)
++        if not kw.has_key('css_class'):
++            if not self.exists():
++                kw['css_class'] = 'nonexistent'
+ 
+         attachment_indicator = kw.get('attachment_indicator')
+         if attachment_indicator is None:
+@@ -1826,7 +1843,7 @@ class RootPage(Page):
+ 
+         return underlay, path
+ 
+-    def getPageList(self, user=None, exists=1, filter=None, include_underlay=True, return_objects=False):
++    def getPageList(self, user=None, exists=1, filter=None, include_underlay=True, return_objects=False, includeBackend=True):
+         """ List user readable pages under current page
+ 
+         Currently only request.rootpage is used to list pages, but if we
+@@ -1895,7 +1912,7 @@ class RootPage(Page):
+                     continue
+ 
+                 # Filter deleted pages
+-                if exists and not page.exists():
++                if exists and not page.exists(includeBackend=includeBackend):
+                     continue
+ 
+                 # Filter out page user may not read.
+--- ./MoinMoin/parser/text_moin_wiki.py.orig	2014-10-17 19:45:33.000000000 +0000
++++ ./MoinMoin/parser/text_moin_wiki.py	2017-12-04 11:55:24.566866414 +0000
+@@ -728,8 +728,12 @@ class Parser:
+                 if scheme == 'attachment':
+                     mt = wikiutil.MimeType(filename=url)
+                     if mt.major == 'text':
+-                        desc = self._transclude_description(desc, url)
+-                        return self.formatter.attachment_inlined(url, desc)
++                        if mt.minor == 'csv':
++                            desc = self._transclude_description(desc, url)
++                            return self.formatter.attachment_inlined(url, desc, format_args=params)
++                        else:
++                            desc = self._transclude_description(desc, url)
++                            return self.formatter.attachment_inlined(url, desc)
+                     # destinguishs if browser need a plugin in place
+                     elif mt.major == 'image' and mt.minor in config.browser_supported_images:
+                         desc = self._transclude_description(desc, url)
+@@ -873,9 +877,10 @@ class Parser:
+                     tag_attrs, query_args = self._get_params(params,
+                                                              tag_attrs={},
+                                                              acceptable_attrs=acceptable_attrs)
+-                    return (self.formatter.pagelink(1, abs_page_name, anchor=anchor, querystr=query_args, **tag_attrs) +
++                    page = Page(self.request, abs_page_name, formatter=self.formatter)
++                    return (self.formatter.pagelink(1, abs_page_name, page=page, anchor=anchor, querystr=query_args, **tag_attrs) +
+                             self._link_description(desc, target, page_name_and_anchor) +
+-                            self.formatter.pagelink(0, abs_page_name))
++                            self.formatter.pagelink(0, abs_page_name, page=page))
+                 else: # interwiki link
+                     page_name, anchor = wikiutil.split_anchor(page_name)
+                     tag_attrs, query_args = self._get_params(params,
+--- ./MoinMoin/support/werkzeug/formparser.py.orig	2014-10-17 19:45:32.000000000 +0000
++++ ./MoinMoin/support/werkzeug/formparser.py	2017-12-04 11:55:24.567866414 +0000
+@@ -33,13 +33,50 @@ _multipart_boundary_re = re.compile('^[ 
+ #: for multipart messages.
+ _supported_multipart_encodings = frozenset(['base64', 'quoted-printable'])
+ 
++class SmartStream(object):
++    """A file-like stream that dynamically switches from memory-based
++    to file-based storage when the total amount of data is larger
++    than 500 kilobytes."""
++
++    def __init__(self, threshold=1024*500):
++        self._is_file = False
++        self._threshold = threshold
++        self._stream = StringIO()
++
++    def __getattr__(self, key):
++        return getattr(self._stream, key)
++
++    def _check(self):
++        if self._is_file:
++            return
++
++        pos = self._stream.tell()
++        if pos <= self._threshold:
++            return
++
++        stream = TemporaryFile('wb+')
++        stream.write(self._stream.getvalue())
++        stream.flush()
++        stream.seek(pos)
++
++        self._stream.close()
++        self._stream = stream
++        self._is_file = True
++
++    def write(self, *args, **kw):
++        result = self._stream.write(*args, **kw)
++        self._check()
++        return result
++
++    def writelines(self, *args, **kw):
++        result = self._stream.writelines(*args, **kw)
++        self._check()
++        return result
+ 
+ def default_stream_factory(total_content_length, filename, content_type,
+                            content_length=None):
+     """The stream factory that is used per default."""
+-    if total_content_length > 1024 * 500:
+-        return TemporaryFile('wb+')
+-    return StringIO()
++    return SmartStream()
+ 
+ 
+ def parse_form_data(environ, stream_factory=None, charset='utf-8',
+--- ./MoinMoin/theme/__init__.py.orig	2014-10-17 19:45:32.000000000 +0000
++++ ./MoinMoin/theme/__init__.py	2017-12-04 11:55:24.568866414 +0000
+@@ -48,6 +48,7 @@ class ThemeBase:
+         'diff':        (_("Diffs"),               "moin-diff.png",   15, 11),
+         'info':        (_("Info"),                "moin-info.png",   12, 11),
+         'edit':        (_("Edit"),                "moin-edit.png",   12, 12),
++        'formedit':    (_("FormEdit"),            "moin-news.png",     12, 12),
+         'unsubscribe': (_("Unsubscribe"),         "moin-unsubscribe.png", 14, 10),
+         'subscribe':   (_("Subscribe"),           "moin-subscribe.png", 14, 10),
+         'raw':         (_("Raw"),                 "moin-raw.png",    12, 13),
+--- ./MoinMoin/theme/modernized.py.orig	2014-10-17 19:45:32.000000000 +0000
++++ ./MoinMoin/theme/modernized.py	2017-12-04 11:55:24.568866414 +0000
+@@ -20,6 +20,8 @@ class Theme(ThemeBase):
+         # FileAttach
+         'attach':     ("%(attach_count)s",       "moin-attach.png",   16, 16),
+         'info':       ("[INFO]",                 "moin-info.png",     16, 16),
++        'edit':       (_("Edit"),                "moin-edit.png",     12, 12),
++        'formedit':   (_("FormEdit"),            "moin-news.png",     12, 12),
+         'attachimg':  (_("[ATTACH]"),            "attach.png",        32, 32),
+         # RecentChanges
+         'rss':        (_("[RSS]"),               "moin-rss.png",      16, 16),
+--- ./MoinMoin/user.py.orig	2014-10-17 19:45:32.000000000 +0000
++++ ./MoinMoin/user.py	2017-12-04 11:55:24.569866414 +0000
+@@ -23,6 +23,9 @@
+ import os, time, codecs, base64
+ from copy import deepcopy
+ import md5crypt
++import errno
++import error
++import uuid
+ 
+ try:
+     import crypt
+@@ -36,13 +39,15 @@ from MoinMoin.support.python_compatibili
+ 
+ from MoinMoin import config, caching, wikiutil, i18n, events
+ from werkzeug.security import safe_str_cmp as safe_str_equal
+-from MoinMoin.util import timefuncs, random_string
++from MoinMoin.util import timefuncs, random_string, filesys
+ from MoinMoin.wikiutil import url_quote_plus
+ 
+ # for efficient lookup <attr> -> userid, we keep an index of this in the cache.
+ # the attribute names in here should be uniquely identifying a user.
+ CACHED_USER_ATTRS = ['name', 'email', 'jid', 'openids', ]
+ 
++class SaveError(error.Error):
++    pass
+ 
+ def getUserList(request):
+     """ Get a list of all (numerical) user IDs.
+@@ -288,6 +293,10 @@ def encodePassword(cfg, pwd, salt=None, 
+         hash = hash_new('sha1', pwd)
+         hash.update(salt)
+         return '{SSHA}' + base64.encodestring(hash.digest() + salt).rstrip()
++    elif scheme == '{SHA}':
++        pwd = pwd.encode('utf-8')
++        hash = hash_new('sha1', pwd)
++        return '{SHA}' + base64.encodestring(hash.digest()).rstrip()
+     else:
+         # should never happen as we check the value of cfg.password_scheme
+         raise NotImplementedError
+@@ -496,7 +505,7 @@ class User:
+         self.subscribed_pages = self._cfg.subscribed_pages_default
+         self.email_subscribed_events = self._cfg.email_subscribed_events_default
+         self.jabber_subscribed_events = self._cfg.jabber_subscribed_events_default
+-        self.theme_name = self._cfg.theme_default
++        self.theme_name = '<default>'
+         self.editor_default = self._cfg.editor_default
+         self.editor_ui = self._cfg.editor_ui
+         self.last_saved = str(time.time())
+@@ -562,6 +571,10 @@ class User:
+         """
+         return os.path.join(self._cfg.user_dir, self.id or "...NONE...")
+ 
++    # Support for administrative scripts and tasks
++    def getFilename(self):
++        return self.__filename()
++
+     def exists(self):
+         """ Do we have a user account for this user?
+ 
+@@ -778,25 +791,48 @@ class User:
+         # !!! should write to a temp file here to avoid race conditions,
+         # or even better, use locking
+ 
+-        data = codecs.open(self.__filename(), "w", config.charset)
+-        data.write("# Data saved '%s' for id '%s'\n" % (
+-            time.strftime(self._cfg.datetime_fmt, time.localtime(time.time())),
+-            self.id))
+-        attrs = self.persistent_items()
+-        attrs.sort()
+-        for key, value in attrs:
+-            # Encode list values
+-            if isinstance(value, list):
+-                key += '[]'
+-                value = encodeList(value)
+-            # Encode dict values
+-            elif isinstance(value, dict):
+-                key += '{}'
+-                value = encodeDict(value)
+-            line = u"%s=%s" % (key, unicode(value))
+-            line = line.replace('\n', ' ').replace('\r', ' ') # no lineseps
+-            data.write(line + '\n')
+-        data.close()
++        temp = file(os.path.join(user_dir, 'temp-' + uuid.uuid4().get_hex()), 'w')
++        try:
++            data = codecs.getwriter(config.charset)(temp)
++            data.write("# Data saved '%s' for id '%s'\n" % (
++                time.strftime(self._cfg.datetime_fmt,
++                              time.localtime(time.time())),
++                self.id))
++            attrs = self.persistent_items()
++            attrs.sort()
++            for key, value in attrs:
++                # Encode list values
++                if isinstance(value, list):
++                    key += '[]'
++                    value = encodeList(value)
++                # Encode dict values
++                elif isinstance(value, dict):
++                    key += '{}'
++                    value = encodeDict(value)
++                line = u"%s=%s" % (key, unicode(value))
++                line = line.replace('\n', ' ').replace('\r', ' ') # no lineseps
++                data.write(line + '\n')
++
++            # atomically put it in place (except on windows)
++            filesys.rename(temp.name, self.__filename())
++        except IOError as err:
++            _ = self._request.getText
++            # throw a nicer exception
++            if err.errno == errno.ENOSPC:
++                raise SaveError(
++                    _("Cannot save user %s, no storage space left.") % 
++                    self.name)
++            else:
++                raise SaveError(
++                    _("An I/O error occurred while saving user %s (errno=%d)")\
++                        % (self.name, err.errno))
++        finally:
++            try:
++                os.remove(temp.name)
++            except:
++                pass # we don't care for errors in the os.remove
++            finally:
++                temp.close()
+ 
+         if not self.disabled:
+             self.valid = 1
+--- ./MoinMoin/util/filesys.py.orig	2014-10-17 19:45:32.000000000 +0000
++++ ./MoinMoin/util/filesys.py	2017-12-04 11:55:24.570866414 +0000
+@@ -217,7 +217,6 @@ def copytree(src, dst, symlinks=False):
+     """
+     names = os.listdir(src)
+     os.mkdir(dst)
+-    copystat(src, dst)
+     errors = []
+     for name in names:
+         srcname = os.path.join(src, name)
+--- ./MoinMoin/web/contexts.py.orig	2014-10-17 19:45:32.000000000 +0000
++++ ./MoinMoin/web/contexts.py	2017-12-04 11:55:24.570866414 +0000
+@@ -218,6 +218,12 @@ class HTTPContext(BaseContext):
+ 
+     # proxy further attribute lookups to the underlying request first
+     def __getattr__(self, name):
++        if name == 'editlog':
++            if "editlog" not in self.__dict__:
++                from MoinMoin.logfile import editlog
++                self.request.rootpage = self.rootpage
++                self.editlog = editlog.EditLog(self.request)
++            return self.editlog
+         try:
+             return getattr(self.request, name)
+         except AttributeError, e:
+--- ./MoinMoin/wikiutil.py.orig	2014-10-17 19:45:32.000000000 +0000
++++ ./MoinMoin/wikiutil.py	2017-12-04 11:55:24.572866414 +0000
+@@ -471,15 +471,15 @@ def load_wikimap(request):
+         generate_file_list(request)
+ 
+     try:
+-        _interwiki_list = request.cfg.cache.interwiki_list
+-        old_mtime = request.cfg.cache.interwiki_mtime
+-        if request.cfg.cache.interwiki_ts + (1*60) < now: # 1 minutes caching time
++        _interwiki_list = request.cfg.cache.interwiki_list[request.user.id]
++        old_mtime = request.cfg.cache.interwiki_mtime[request.user.id]
++        if request.cfg.cache.interwiki_ts[request.user.id] + (1*60) < now: # 1 minutes caching time
+             max_mtime = get_max_mtime(request.cfg.shared_intermap_files, Page(request, INTERWIKI_PAGE))
+             if max_mtime > old_mtime:
+                 raise AttributeError # refresh cache
+             else:
+-                request.cfg.cache.interwiki_ts = now
+-    except AttributeError:
++                request.cfg.cache.interwiki_ts[request.user.id] = now
++    except (AttributeError, KeyError):
+         _interwiki_list = {}
+         lines = []
+ 
+@@ -509,10 +509,28 @@ def load_wikimap(request):
+         if request.cfg.interwikiname:
+             _interwiki_list[request.cfg.interwikiname] = request.script_root + '/'
+ 
++        # collab list
++        if hasattr(request.cfg, 'collab_basedir'):
++            from collabbackend import listCollabs
++            user = request.user.name
++            active = request.cfg.interwikiname
++            path = request.cfg.collab_basedir
++            baseurl = request.cfg.collab_baseurl
++            collablist = listCollabs(baseurl, user, path, active)
++            
++            for collab in collablist:
++                _interwiki_list[collab[0]] = collab[3]
++
+         # save for later
+-        request.cfg.cache.interwiki_list = _interwiki_list
+-        request.cfg.cache.interwiki_ts = now
+-        request.cfg.cache.interwiki_mtime = get_max_mtime(request.cfg.shared_intermap_files, Page(request, INTERWIKI_PAGE))
++        if not getattr(request.cfg.cache, 'interwiki_list', None):
++            request.cfg.cache.interwiki_list = dict()
++        if not getattr(request.cfg.cache, 'interwiki_ts', None):
++            request.cfg.cache.interwiki_ts = dict()
++        if not getattr(request.cfg.cache, 'interwiki_mtime', None):
++            request.cfg.cache.interwiki_mtime = dict()
++        request.cfg.cache.interwiki_list[request.user.id] = _interwiki_list
++        request.cfg.cache.interwiki_ts[request.user.id] = now
++        request.cfg.cache.interwiki_mtime[request.user.id] = get_max_mtime(request.cfg.shared_intermap_files, Page(request, INTERWIKI_PAGE))
+ 
+     return _interwiki_list
+ 
+@@ -2269,7 +2287,7 @@ def taintfilename(basename):
+     """
+     # note: filenames containing ../ (or ..\) are made safe by replacing
+     # the / (or the \). the .. will be kept, but is harmless then.
+-    basename = re.sub('[\x00-\x1f:/\\\\<>"*?%|]', '_', basename)
++    basename = re.sub('[\x00-\x1f:/\\\\<>"*?|]', '_', basename)
+     return basename
+ 
+ 
+--- ./MoinMoin/xmlrpc/__init__.py.orig	2014-10-17 19:45:32.000000000 +0000
++++ ./MoinMoin/xmlrpc/__init__.py	2017-12-04 11:55:24.573866414 +0000
+@@ -38,6 +38,32 @@ from MoinMoin.logfile import editlog
+ from MoinMoin.action import AttachFile
+ from MoinMoin import caching
+ 
++def is_login_required(request):
++    login_required = True
++    env = request.environ
++
++    from MoinMoin.auth import GivenAuth
++    from MoinMoin.auth.sslclientcert import SSLClientCertAuth
++
++    # Get all the authentication methods used in the config
++    auth = getattr(request.cfg, 'auth', [])
++
++    for method in auth:
++        # If we're using HTTP auth, and the server has authenticated
++        # the user successfully, do not require another login
++        if isinstance(method, GivenAuth):
++            if env.get('REMOTE_USER', ''):
++               login_required = False
++               break
++        # If we're using SSL client certificate auth, and the server
++        # has authenticated the user successfully, do not require
++        # another login
++        elif isinstance(method, SSLClientCertAuth):
++            if env.get('SSL_CLIENT_VERIFY', 'FAILURE') == 'SUCCESS':
++               login_required = False
++               break
++
++    return login_required
+ 
+ logging_tearline = '- XMLRPC %s ' + '-' * 40
+ 
+@@ -132,7 +158,12 @@ class XmlRpcBase:
+             else:
+                 # overwrite any user there might be, if you need a valid user for
+                 # xmlrpc, you have to use multicall and getAuthToken / applyAuthToken
+-                request.user = user.User(request, auth_method='xmlrpc:invalid')
++                login_required = is_login_required(self.request)
++                if (not self.request.user or
++                    not self.request.user.valid or
++                    login_required):
++                    self.request.user = user.User(self.request, 
++                                                  auth_method='xmlrpc:invalid')
+ 
+                 data = request.read()
+ 
+@@ -767,7 +798,14 @@ class XmlRpcBase:
+         request.session = request.cfg.session_service.get_session(request)
+ 
+         u = auth.setup_from_session(request, request.session)
+-        u = auth.handle_login(request, u, username=username, password=password)
++
++        login_required = is_login_required(request)
++
++        if login_required:
++            u = auth.handle_login(request, u, username=username, 
++                                  password=password)
++        else:
++            u = request.user
+ 
+         if u and u.valid:
+             request.user = u

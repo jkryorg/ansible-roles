@@ -1,0 +1,219 @@
+---
+- name: install dependencies
+  package:
+    name: "{{ item }}"
+    state: installed
+  with_items:
+    - graphviz-python
+    - m2crypto
+    - patch
+
+- name: set moin basedir variable
+  set_fact:
+    collab_moin_basedir: "{{ ansible_cache }}/{{ collab_moin_package|basename|replace('.tar.gz', '') }}"
+
+- name: unarchive moin package
+  unarchive:
+    src: "{{ collab_moin_package }}"
+    dest: "{{ ansible_cache }}"
+    owner: root
+    group: root
+    creates: "{{ collab_moin_basedir }}"
+
+- name: patch moin source
+  patch:
+    src: "files/{{ collab_moin_package|basename|replace('.tar.gz', '.patch') }}"
+    basedir: "{{ collab_moin_basedir }}"
+    strip: 1
+
+- name: copy moin htdocs
+  command: "cp -a {{ collab_moin_basedir }}/MoinMoin/web/static/htdocs {{ collab_moin_basedir }}/wiki"
+  args:
+    creates: "{{ collab_moin_basedir }}/wiki/htdocs"
+
+- name: install moin
+  pip:
+    name: "{{ collab_moin_basedir }}"
+    extra_args: --no-index
+
+- name: copy graphingwiki packages
+  copy:
+    src: "{{ item }}"
+    dest: "{{ ansible_cache }}/{{ item | basename }}"
+    mode: 0600
+    owner: root
+    group: root
+  with_items:
+    - "{{ collab_graphingwiki_package }}"
+    - "{{ collab_collabbackend_package }}"
+
+- name: install graphingwiki packages
+  pip:
+    name: "{{ ansible_cache }}/{{ item | basename }}"
+    extra_args: --egg --no-index
+  with_items:
+    - "{{ collab_graphingwiki_package }}"
+    - "{{ collab_collabbackend_package }}"
+
+- name: create group collab
+  group:
+    name: collab
+    gid: 812
+
+- name: create user collab
+  user:
+    name: collab
+    comment: Service Collab
+    uid: 812
+    group: collab
+    home: /var/lib/collab
+    shell: /sbin/nologin
+    skeleton: /dev/null
+
+- name: create .profile
+  copy:
+    content: "umask 007\n"
+    dest: /var/lib/collab/.profile
+    mode: 0440
+    owner: collab
+    group: collab
+
+- name: create config directories
+  file:
+    state: directory
+    path: "{{ item }}"
+    mode: 0755
+    owner: root
+    group: root
+  with_items:
+    - "/etc/local"
+    - "/etc/local/collab"
+
+- name: create collab.ini
+  template:
+    src: collab.ini.j2
+    dest: /etc/local/collab/collab.ini
+    mode: 0644
+    owner: root
+    group: root
+
+- name: create data directory
+  file:
+    state: directory
+    path: "{{ item }}"
+    mode: 0750
+    owner: collab
+    group: apache
+  with_items:
+    - "{{ collab_datadir }}"
+    - "{{ collab_datadir }}/collab"
+
+- name: link data directory
+  file:
+    state: link
+    src: "{{ collab_datadir }}"
+    dest: /srv/wikis
+  when: collab_datadir != "/srv/wikis"
+
+- name: create data directories
+  file:
+    state: directory
+    path: "{{ item }}"
+    mode: 02770
+    owner: collab
+    group: collab
+  with_items:
+    - "/srv/wikis/collab/archive"
+    - "/srv/wikis/collab/cache"
+    - "/srv/wikis/collab/config"
+    - "/srv/wikis/collab/log"
+    - "/srv/wikis/collab/underlay"
+    - "/srv/wikis/collab/user"
+    - "/srv/wikis/collab/wikis"
+
+- name: create data directories with apache access
+  file:
+    state: directory
+    path: "{{ item }}"
+    mode: 02770
+    owner: collab
+    group: apache
+  with_items:
+    - "/srv/wikis/collab/htdocs"
+    - "/srv/wikis/collab/run"
+
+- name: create tmpfs mount for cache
+  mount:
+    state: mounted
+    path: "{{ collab_datadir }}/collab/cache"
+    src: none
+    fstype: tmpfs
+    opts: uid=collab,gid=collab,mode=2770
+
+- name: install htdocs/.htaccess
+  copy:
+    src: files/collab-htaccess
+    dest: /srv/wikis/collab/htdocs/.htaccess
+    mode: 0660
+    owner: collab
+    group: apache
+
+- name: extract configs from collabbackend archive
+  unarchive:
+    src: "{{ ansible_cache }}/{{ collab_collabbackend_package | basename }}"
+    dest: /srv/wikis/collab/config
+    mode: 0660
+    owner: collab
+    group: collab
+    creates: /srv/wikis/collab/config/collabfarm.py
+    remote_src: yes
+    extra_opts:
+      - "--strip=2"
+      - "--no-anchored"
+      - "config/collabfarm.py"
+      - "config/intermap.txt"
+      - "config/logging.conf"
+
+- name: extract CollabBase.zip from collabbackend archive
+  unarchive:
+    src: "{{ ansible_cache }}/{{ collab_collabbackend_package | basename }}"
+    dest: /var/lib/collab
+    mode: 0660
+    owner: collab
+    group: collab
+    creates: /var/lib/collab/CollabBase.zip
+    remote_src: yes
+    extra_opts:
+      - "--strip=2"
+      - "--no-anchored"
+      - "packages/CollabBase.zip"
+
+- name: initialize the collab
+  script: files/collab-init.sh
+  args:
+    creates: /srv/wikis/collab/wikis/collab
+
+- name: add collab-htaccess cronjob
+  cron:
+    name: collab-htaccess
+    user: collab
+    job: "/usr/bin/collab-htaccess"
+
+- name: install links under apache htdocs
+  file:
+    state: link
+    src: "{{ item[2] }}"
+    dest: "/srv/www/htdocs/{{ item[0] }}/{{ item[1] }}"
+  with_nested:
+    - "{{ collab_sites }}"
+    - - ["collab", "/srv/wikis/collab/htdocs"]
+      - ["moin_static", "/usr/share/moin/htdocs"]
+
+- name: create apache config
+  template:
+    src: collab.conf.j2
+    dest: "{{ apache_confdir }}/conf.local.d/60-collab.conf"
+    mode: 0644
+    owner: root
+    group: root
+  notify: restart apache

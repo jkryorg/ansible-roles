@@ -1,0 +1,10 @@
+{% for site in collab_sites %}
+<Directory "/srv/www/htdocs/{{ site }}/collab">
+  Options +ExecCGI
+  AllowOverride All
+  WSGIProcessGroup collab
+  WSGIRestrictProcess collab
+</Directory>
+
+{% endfor %}
+WSGIDaemonProcess collab user=collab group=collab umask=0007 processes={{ ansible_processor_count }} threads={{ collab_threads }} maximum-requests=4000 display-name=%{GROUP}
