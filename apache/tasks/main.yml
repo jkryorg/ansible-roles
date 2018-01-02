@@ -88,6 +88,21 @@
     group: root
   notify: restart apache
   with_indexed_items: "{{ apache_sites }}"
+  register: apache_sites_managed
+
+- name: find present site configurations
+  find:
+    paths: "{{ apache_confdir }}/conf.sites.d"
+  register: apache_sites_present
+
+- name: remove unmanaged site configurations
+  file:
+    state: absent
+    path: "{{ item.path }}"
+  notify: restart apache
+  with_items: "{{ apache_sites_present.files }}"
+  # workaround for inconsistent attribute naming in ansible 2.4
+  when: item.path not in apache_sites_managed.results|selectattr("dest", "defined")|map(attribute="dest")|union(apache_sites_managed.results|selectattr("path", "defined")|map(attribute="path"))
 
 - name: enable apache service
   service:
