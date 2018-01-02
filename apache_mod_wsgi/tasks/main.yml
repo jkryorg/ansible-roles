@@ -1,0 +1,18 @@
+---
+- name: include OS-specific variables
+  include_vars: "{{ ansible_os_family }}.yml"
+
+- name: install mod_wsgi package
+  package:
+    name: "{{ apache_mod_wsgi_package }}"
+    state: installed
+  notify: restart apache
+
+- name: install module configuration
+  copy:
+    src: "files/apache-wsgi.conf"
+    dest: "{{ apache_confdir }}/conf.local.d/50-wsgi.conf"
+    mode: 0644
+    owner: root
+    group: root
+  notify: restart apache
