@@ -1,0 +1,8 @@
+---
+apache_packages:
+  - httpd
+  - mod_ssl
+apache_service: httpd
+apache_confdir: /etc/httpd
+apache_main_config: "{{ apache_confdir }}/conf/httpd.conf"
+apache_main_template: httpd.conf.j2

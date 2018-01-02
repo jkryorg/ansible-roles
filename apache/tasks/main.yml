@@ -1,0 +1,96 @@
+---
+- name: include OS-specific variables
+  include_vars: "{{ ansible_os_family }}.yml"
+
+- name: install apache packages
+  package:
+    name: "{{ item }}"
+    state: installed
+  with_items: "{{ apache_packages }}"
+
+- name: create data directory
+  file:
+    state: directory
+    path: "{{ apache_datadir }}"
+    mode: 0755
+    owner: root
+    group: root
+
+- name: link data directory
+  file:
+    state: link
+    src: "{{ apache_datadir }}"
+    dest: /srv/www
+  when: apache_datadir != "/srv/www"
+
+- name: create default virtual host directories
+  file:
+    state: directory
+    path: "{{ item }}"
+    mode: 0755
+    owner: root
+    group: root
+  with_items:
+    - "/srv/www/htdocs"
+    - "/srv/www/htdocs/{{ ansible_nodename }}"
+    - "/srv/www/log"
+    - "/srv/www/log/{{ ansible_nodename }}"
+
+- name: create configuration directories
+  file:
+    state: directory
+    path: "{{ item }}"
+    mode: 0755
+    owner: root
+    group: root
+  with_items:
+    - "{{ apache_confdir }}/conf.local.d"
+    - "{{ apache_confdir }}/conf.sites.d"
+
+- name: install main configuration
+  template:
+    src: "{{ apache_main_template }}"
+    dest: "{{ apache_main_config }}"
+    mode: 0644
+    owner: root
+    group: root
+  notify: restart apache
+
+- name: install module configurations
+  template:
+    src: "{{ item[1] }}.j2"
+    dest: "{{ apache_confdir }}/conf.local.d/{{ '%02d'|format(item[0]) }}-{{ item[1] }}"
+    mode: 0644
+    owner: root
+    group: root
+  notify: restart apache
+  with_indexed_items:
+    - listen.conf
+    - ssl.conf
+
+- name: create site directories
+  file:
+    state: directory
+    path: "{{ item[0] }}/{{ item[1].name }}"
+    mode: 0755
+    owner: root
+    group: root
+  with_nested:
+    - ["/srv/www/htdocs", "/srv/www/log"]
+    - "{{ apache_sites }}"
+
+- name: create site configurations
+  template:
+    src: "site-{{ item[1].type|default('https') }}.conf.j2"
+    dest: "{{ apache_confdir }}/conf.sites.d/{{ '%02d'|format(item[0]) }}-{{ item[1].name }}.conf"
+    mode: 0644
+    owner: root
+    group: root
+  notify: restart apache
+  with_indexed_items: "{{ apache_sites }}"
+
+- name: enable apache service
+  service:
+    name: "{{ apache_service }}"
+    state: started
+    enabled: yes

@@ -1,0 +1,13 @@
+{% if item[1].port is defined and item[1].port != 80 %}
+Listen {{ item[1].port }}
+
+{% endif %}
+<VirtualHost {{ item[1].addr|default("*") }}:{{ item[1].port|default(80) }}>
+  ServerName {{ item[1].name }}
+{% for alias in item[1].aliases|default([]) %}
+  ServerAlias {{ alias }}
+{% endfor %}
+  DocumentRoot /srv/www/htdocs/{{ item[1].name }}
+  ErrorLog /srv/www/log/{{ item[1].name }}/error_log
+  CustomLog /srv/www/log/{{ item[1].name }}/access_log combined
+</VirtualHost>
