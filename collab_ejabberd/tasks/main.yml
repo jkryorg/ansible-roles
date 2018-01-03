@@ -1,0 +1,92 @@
+---
+- name: install dependencies
+  package:
+    name: "{{ item }}"
+    state: installed
+  with_items:
+    - erlang
+    - libyaml
+
+- name: create group ejabberd
+  group:
+    name: ejabberd
+    gid: 802
+
+- name: create user ejabberd
+  user:
+    name: ejabberd
+    comment: Service Jabber
+    uid: 802
+    group: ejabberd
+    home: /var/lib/ejabberd
+    shell: /sbin/nologin
+    createhome: no
+
+- name: add ejabberd to collab group
+  user:
+    name: ejabberd
+    groups: collab
+    append: yes
+
+- name: copy ejabberd package
+  copy:
+    src: "{{ collab_ejabberd_package }}"
+    dest: "{{ ansible_cache }}/{{ collab_ejabberd_package | basename }}"
+    mode: 0600
+    owner: root
+    group: root
+
+- name: install ejabberd package
+  yum:
+    name: "{{ ansible_cache }}/{{ collab_ejabberd_package | basename }}"
+    state: installed
+
+- name: create directory for certificate fragments
+  file:
+    state: directory
+    path: /etc/ejabberd/ejabberd.pem.d
+    mode: 0700
+    owner: root
+    group: root
+
+- name: link certificate fragments
+  file:
+    state: link
+    src: "{{ item[1] }}"
+    dest: "/etc/ejabberd/ejabberd.pem.d/{{ item[0] }}"
+  with_items:
+    - [["00-ejabberd.key", "{{ collab_ejabberd_key }}"]]
+    - [["10-ejabberd.crt", "{{ collab_ejabberd_cert }}"]]
+
+- name: assemble certificate
+  assemble:
+    src: /etc/ejabberd/ejabberd.pem.d
+    dest: /etc/ejabberd/ejabberd.pem
+    mode: 0600
+    owner: ejabberd
+    group: ejabberd
+  notify: restart ejabberd
+
+- name: configure ejabberd
+  template:
+    src: ejabberd.yml.j2
+    dest: /etc/ejabberd/ejabberd.yml
+    mode: 0640
+    owner: ejabberd
+    group: ejabberd
+  notify: restart ejabberd
+
+- name: enable ejabberd service
+  service:
+    name: ejabberd
+    state: started
+    enabled: yes
+
+- name: create apache config
+  copy:
+    src: files/ejabberd-httpd.conf
+    dest: "{{ apache_confdir }}/conf.local.d/60-ejabberd.conf"
+    mode: 0644
+    owner: root
+    group: root
+  notify: restart apache
