@@ -82,11 +82,13 @@
     state: started
     enabled: yes
 
-- name: create apache config
+- name: create apache configs
   copy:
     src: files/ejabberd-httpd.conf
-    dest: "{{ apache_confdir }}/conf.local.d/60-ejabberd.conf"
+    dest: "{{ apache_confdir }}/conf.sites.d/{{ '%02d'|format(item[0]) }}-{{ item[1].name }}.conf.d/ejabberd.conf"
     mode: 0644
     owner: root
     group: root
   notify: restart apache
+  with_indexed_items: "{{ apache_sites }}"
+  when: item[1].name in collab_sites
