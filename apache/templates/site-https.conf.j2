@@ -147,4 +147,5 @@ BrowserMatch "MSIE [2-5]" \
          nokeepalive ssl-unclean-shutdown \
          downgrade-1.0 force-response-1.0
 
+IncludeOptional conf.sites.d/{{ '%02d'|format(item[0]) }}-{{ item[1].name }}.conf.d/*.conf
 </VirtualHost>
