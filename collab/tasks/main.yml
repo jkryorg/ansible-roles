@@ -101,12 +101,11 @@
   file:
     state: directory
     path: "{{ item }}"
-    mode: 0750
-    owner: collab
-    group: apache
+    mode: 0755
+    owner: root
+    group: root
   with_items:
     - "{{ collab_datadir }}"
-    - "{{ collab_datadir }}/collab"
 
 - name: link data directory
   file:
@@ -123,24 +122,16 @@
     owner: collab
     group: collab
   with_items:
+    - "/srv/wikis/collab"
     - "/srv/wikis/collab/archive"
     - "/srv/wikis/collab/cache"
     - "/srv/wikis/collab/config"
+    - "/srv/wikis/collab/htdocs"
     - "/srv/wikis/collab/log"
+    - "/srv/wikis/collab/run"
     - "/srv/wikis/collab/underlay"
     - "/srv/wikis/collab/user"
     - "/srv/wikis/collab/wikis"
-
-- name: create data directories with apache access
-  file:
-    state: directory
-    path: "{{ item }}"
-    mode: 02770
-    owner: collab
-    group: apache
-  with_items:
-    - "/srv/wikis/collab/htdocs"
-    - "/srv/wikis/collab/run"
 
 - name: create tmpfs mount for cache
   mount:
@@ -156,7 +147,7 @@
     dest: /srv/wikis/collab/htdocs/.htaccess
     mode: 0660
     owner: collab
-    group: apache
+    group: collab
 
 - name: extract configs from collabbackend archive
   unarchive:
@@ -208,6 +199,13 @@
     - "{{ collab_sites }}"
     - - ["collab", "/srv/wikis/collab/htdocs"]
       - ["moin_static", "/usr/share/moin/htdocs"]
+
+- name: add apache to collab group
+  user:
+    name: apache
+    groups: collab
+    append: yes
+  notify: restart apache
 
 - name: create apache config
   template:

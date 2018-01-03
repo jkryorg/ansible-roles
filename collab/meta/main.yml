@@ -1,6 +1,6 @@
 ---
 dependencies:
-  - { role: apache_mod_wsgi }
   - { role: ansible_vars }
   - { role: ansible_cache }
   - { role: pip }
+  - { role: apache_mod_wsgi }
