@@ -1,8 +1,7 @@
 ---
-collab_ejabberd_hosts: ["{{ ansible_nodename }}"]
 collab_ejabberd_admins: []
 collab_ejabberd_max_sessions: 1000
 collab_ejabberd_max_conferences: 2000
 collab_ejabberd_max_muc_users: 1000
-collab_ejabberd_cert: "{{ tls_certs }}/{{ ansible_nodename }}.crt"
-collab_ejabberd_key: "{{ tls_private }}/{{ ansible_nodename }}.key"
+collab_ejabberd_cert: "{{ tls_certs }}/{{ collab_jabberdomains|first }}.crt"
+collab_ejabberd_key: "{{ tls_private }}/{{ collab_jabberdomains|first }}.key"
