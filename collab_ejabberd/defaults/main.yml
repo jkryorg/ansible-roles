@@ -1,7 +1,4 @@
 ---
 collab_ejabberd_admins: []
-collab_ejabberd_max_sessions: 1000
-collab_ejabberd_max_conferences: 2000
-collab_ejabberd_max_muc_users: 1000
 collab_ejabberd_cert: "{{ tls_certs }}/{{ collab_jabberdomains|first }}.crt"
 collab_ejabberd_key: "{{ tls_private }}/{{ collab_jabberdomains|first }}.key"

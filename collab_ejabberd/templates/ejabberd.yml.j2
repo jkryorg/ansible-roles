@@ -92,7 +92,7 @@ access:
     admin: 1000
     all: 100
   max_user_sessions:
-    all: {{ collab_ejabberd_max_sessions }}
+    all: 10000
   muc:
     local: allow
   muc_admin:
@@ -131,13 +131,13 @@ modules:
     access_create: muc_create
     access_persistent: muc_create
     history_size: 100
-    max_users: {{ collab_ejabberd_max_muc_users }}
-    max_user_conferences: {{ collab_ejabberd_max_conferences }}
+    max_users: 1000
+    max_user_conferences: 10000
     default_room_options:
       allow_user_invites: true
       anonymous: false
       logging: false
-      max_users: {{ collab_ejabberd_max_muc_users }}
+      max_users: 1000
       members_by_default: false
       members_only: true
       public: false
