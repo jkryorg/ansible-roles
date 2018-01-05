@@ -67,7 +67,7 @@
     - name: configure all.log
       template:
         src: 20-all.conf.j2
-        dest: /etc/rsyslog.d/00-all.conf
+        dest: /etc/rsyslog.d/20-all.conf
         mode: 0644
         owner: root
         group: root
