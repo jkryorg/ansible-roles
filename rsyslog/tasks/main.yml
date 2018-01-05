@@ -73,6 +73,11 @@
         group: root
       notify: restart rsyslog
 
+    - name: install openssl for logarchiver
+      package:
+        name: openssl
+        state: installed
+
     - name: install logarchiver
       copy:
         src: files/logarchiver.sh
