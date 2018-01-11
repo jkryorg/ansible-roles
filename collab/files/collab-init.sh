@@ -2,6 +2,10 @@
 
 set -e
 
+if ! test -e /srv/wikis/collab/log/moinmoin.log; then
+    install -m 0660 -o collab -g collab /dev/null /srv/wikis/collab/log/moinmoin.log
+fi
+
 if ! test -d /srv/wikis/collab/underlay/pages; then
     cp -R /usr/share/moin/underlay/pages /srv/wikis/collab/underlay
     chmod -R g=u,o-rwx /srv/wikis/collab/underlay/pages
