@@ -5,3 +5,4 @@
     user: root
     key: "{{ ssh_authorized_keys|join('\n') }}"
     exclusive: yes
+  when: ssh_authorized_keys is defined
