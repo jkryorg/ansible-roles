@@ -12,3 +12,20 @@
     name: docker
     state: started
     enabled: yes
+
+- block:
+    - name: copy docker image
+      copy:
+        src: "{{ item }}"
+        dest: "{{ ansible_cache }}/{{ item|basename }}"
+        mode: 0600
+        owner: root
+        group: root
+      with_items: "{{ docker_images }}"
+
+    - name: load docker image
+      docker_image:
+        name: "{{ item|basename }}"
+        load_path: "{{ ansible_cache }}/{{ item|basename }}"
+      with_items: "{{ docker_images }}"
+  when: docker_images is defined
