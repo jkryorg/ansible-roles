@@ -5,9 +5,9 @@ Listen {{ item[1].port }}
 <VirtualHost {{ item[1].addr|default("*") }}:{{ item[1].port|default(443) }}>
   # General setup for the virtual host, inherited from global configuration
   ServerName {{ item[1].name }}
-  {% for alias in item[1].aliases|default([]) %}
+{% for alias in item[1].aliases|default([]) %}
   ServerAlias {{ alias }}
-  {% endfor %}
+{% endfor %}
   DocumentRoot /srv/www/htdocs/{{ item[1].name }}
 
   # Use separate log files for the SSL virtual host; note that LogLevel
@@ -54,6 +54,15 @@ Listen {{ item[1].port }}
   #   certificate for convinience.
   SSLCertificateChainFile {{ item[1].cert|default("/".join((tls_certs, item[1].name))) }}.crt
 
+{% if item[1].sslproxy|default(false) %}
+  #   SSL/TLS Protocol Engine for proxy:
+  SSLProxyEngine on
+  SSLProxyCACertificateFile {{ item[1].sslproxy_cacert }}
+  SSLProxyMachineCertificateFile {{ item[1].sslproxy_cert }}
+  SSLProxyVerify require
+  SSLProxyVerifyDepth {{ item[1].sslproxy_verifydepth|default(2) }}
+
+{% endif %}
   #   SSL Engine Options:
   #   Set various options for the SSL engine.
   #   o StdEnvVars:
