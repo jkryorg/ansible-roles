@@ -1,5 +1,4 @@
 # {{ ansible_managed }}
 {% for port in apache_listen|unique %}
 Listen {{ port }}
-NameVirtualHost *:{{ port }}
 {% endfor %}
