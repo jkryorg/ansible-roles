@@ -1,0 +1,24 @@
+---
+- name: copy CA certificate
+  copy:
+    src: "{{ ansible_pki_cacert }}"
+    dest: "{{ tls_certs }}/ansible-ca.crt"
+    mode: 0644
+    owner: root
+    group: "{{ ansible_wheel }}"
+
+- name: copy host certificate
+  copy:
+    src: "{{ ansible_pki_cert }}"
+    dest: "{{ tls_certs }}/ansible-{{ inventory_hostname }}.crt"
+    mode: 0644
+    owner: root
+    group: "{{ ansible_wheel }}"
+
+- name: copy host private key
+  copy:
+    src: "{{ ansible_pki_key }}"
+    dest: "{{ tls_private }}/ansible-{{ inventory_hostname }}.key"
+    mode: 0600
+    owner: root
+    group: "{{ ansible_wheel }}"

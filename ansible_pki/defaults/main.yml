@@ -1,0 +1,4 @@
+---
+ansible_pki_cacert: "pki/certs/ca.crt"
+ansible_pki_cert: "pki/certs/{{ inventory_hostname }}.crt"
+ansible_pki_key: "pki/private/{{ inventory_hostname }}.key"
