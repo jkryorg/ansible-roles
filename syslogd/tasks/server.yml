@@ -1,0 +1,19 @@
+---
+- name: create certificate symlink
+  file:
+    state: link
+    src: "{{ syslogd_cert }}"
+    dest: "{{ tls_certs }}/0.0.0.0:6514.crt"
+
+- name: create private key symlink
+  file:
+    state: link
+    src: "{{ syslogd_key }}"
+    dest: "{{ tls_private }}/0.0.0.0:6514.key"
+
+- name: enable syslogd
+  service:
+    name: syslogd
+    state: started
+    enabled: yes
+    arguments: "-n -C {{syslogd_cacert}} -S 0.0.0.0:6514 -S :::6514"

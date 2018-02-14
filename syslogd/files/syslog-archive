@@ -1,0 +1,57 @@
+#!/bin/sh
+
+set -eu
+
+umask 027
+
+LOGS=""
+YEAR="`date +%Y`"
+DATE="`date +%Y-%m-%d`"
+
+myerror() {
+    echo "Error: $*" 1>&2
+    exit 1
+}
+
+archive_log() {
+    FILE="${1}"
+    DEST="${2}"
+
+    if [ -f "${DEST}" -o -f "${DEST}.gz" ]; then
+        echo "Skipping ${FILE}: Archive already exists" 1>&2
+    else
+        mv "${FILE}" "${DEST}"
+        touch "${FILE}"
+        LOGS="${LOGS}${DEST} "
+    fi
+}
+
+restart_syslog() {
+    for pid in /var/run/syslog.pid /var/run/syslogd.pid /var/run/rsyslogd.pid; do
+        if [ -s "${pid}" ]; then
+            kill -HUP `cat ${pid}`
+            return
+        fi
+    done
+    myerror "Cannot find syslog pid file"
+}
+
+[ $# -ge 1 ] || myerror "Usage: `basename $0` FILE ..."
+
+while [ "$*" ]; do
+    basedir="`dirname $1`"
+    baselog="`basename $1`"
+    if [ -f "${1}" ]; then
+        destdir=${basedir}/archive/${YEAR}
+        destlog=${destdir}/${baselog}.${DATE}
+        [ -d "${destdir}" ] || mkdir -p ${destdir}
+        archive_log ${1} ${destlog}
+    else
+        echo "Skipping ${1}: No such file" 1>&2
+    fi
+    shift
+done
+
+restart_syslog
+
+for log in ${LOGS}; do nice gzip -f ${log}; done

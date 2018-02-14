@@ -1,0 +1,7 @@
+---
+syslogd_cacert: "{{ tls_certs }}/ansible-ca.crt"
+syslogd_cert: "{{ tls_certs }}/ansible-{{ inventory_hostname }}.crt"
+syslogd_key: "{{ tls_private }}/ansible-{{ inventory_hostname }}.key"
+syslogd_all: false
+syslogd_server: false
+syslogd_datadir: "/srv/log"

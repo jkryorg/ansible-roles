@@ -1,0 +1,8 @@
+---
+- name: touch all.log
+  shell: "umask 027; test -e {{ syslogd_datadir }}/all.log || touch {{ syslogd_datadir }}/all.log"
+
+- name: restart syslogd
+  service:
+    name: syslogd
+    state: restarted

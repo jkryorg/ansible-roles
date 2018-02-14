@@ -1,0 +1,57 @@
+---
+- block:
+    - name: create data directory
+      file:
+        state: directory
+        path: "{{ item }}"
+        mode: 0750
+        owner: root
+        group: "{{ ansible_wheel }}"
+      notify: touch all.log
+      with_items:
+        - "{{ syslogd_datadir }}"
+        - "{{ syslogd_datadir }}/archive"
+
+    - name: create /srv/log symlink
+      file:
+        state: link
+        src: "{{ syslogd_datadir }}"
+        dest: "/srv/log"
+      when: syslogd_datadir != "/srv/log"
+
+    - name: install syslog-archive
+      copy:
+        src: files/syslog-archive
+        dest: /usr/local/sbin/syslog-archive
+        mode: 0755
+        owner: root
+        group: "{{ ansible_wheel }}"
+
+    - name: add syslog-archive cron job
+      cron:
+        name: syslog-archive
+        user: root
+        hour: 0
+        minute: 0
+        job: "/usr/local/sbin/syslog-archive /srv/log/all.log"
+
+    - name: add all.log to syslog.conf
+      blockinfile:
+        path: /etc/syslog.conf
+        insertbefore: BOF
+        block: |
+          # everything goes to all.log
+          *.*							/srv/log/all.log
+          # only the local host goes to the standard logs
+          +{{ ansible_hostname }}
+        marker: "# {mark} ANSIBLE MANAGED BLOCK (syslogd)"
+      notify: restart syslogd
+  when: syslogd_all or syslogd_server
+
+- name: include remote configuration
+  include_tasks: remote.yml
+  when: syslogd_remote is defined and not syslogd_server
+
+- name: include server configuration
+  include_tasks: server.yml
+  when: syslogd_server

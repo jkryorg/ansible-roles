@@ -1,0 +1,14 @@
+---
+- name: add remote host to syslog.conf
+  lineinfile:
+    path: /etc/syslog.conf
+    regexp: '^\*\.\*\s+@tls'
+    line: "*.*\t\t\t\t\t\t\t@tls://{{ syslogd_remote }}:6514"
+  notify: restart syslogd
+
+- name: enable syslogd
+  service:
+    name: syslogd
+    state: started
+    enabled: yes
+    arguments: "-h -C {{syslogd_cacert}} -c {{syslogd_cert}} -k {{syslogd_key}}"
