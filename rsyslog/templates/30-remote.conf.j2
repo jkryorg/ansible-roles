@@ -1,10 +1,10 @@
 #jinja2: lstrip_blocks: "True", trim_blocks: "True"
 # {{ ansible_managed }}
-{% if rsyslog_remote_udp %}
+{% if rsyslog_remote_udp is defined %}
 # Forward to remote UDP server
-*.*	@{{ rsyslog_udp_remote }}
+*.*	@{{ rsyslog_remote_udp }}
 {% endif %}
-{% if rsyslog_remote_tcp %}
+{% if rsyslog_remote_tcp is defined %}
 # Forward to remote TCP server
 $ActionQueueFileName {{ rsyslog_remote_tcp.replace(":", ".") }}
 $ActionQueueMaxDiskSpace 1G
