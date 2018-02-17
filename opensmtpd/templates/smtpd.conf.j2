@@ -14,7 +14,7 @@ accept for local alias <aliases> deliver to mbox
 accept from local for any relay
 {%- if opensmtpd_relay_via is defined %}
  via smtp+tls://{{ opensmtpd_relay_via }}
-  {%- if opensmtpd_relay_as is defined %}
+{%- endif %}
+{% if opensmtpd_relay_as is defined %}
  as "@{{ opensmtpd_relay_as }}"
-  {% endif %}
 {% endif %}
