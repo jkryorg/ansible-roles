@@ -61,7 +61,7 @@
       file:
         state: link
         src: "{{ rsyslog_datadir }}"
-        dest: "/srv/rsyslog"
+        dest: "/srv/log"
       when: rsyslog_datadir != "/srv/log"
 
     - name: configure all.log
