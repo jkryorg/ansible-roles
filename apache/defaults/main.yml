@@ -1,3 +1,6 @@
 ---
 apache_datadir: /srv/www
 apache_listen: [443]
+apache_sslproxy_cacert: "{{ tls_certs }}/ansible-ca.crt"
+apache_sslproxy_cert: "{{ tls_private }}/apache-sslproxy.pem"
+apache_sslproxy_verifydepth: 2

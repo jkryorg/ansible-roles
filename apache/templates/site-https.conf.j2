@@ -36,14 +36,14 @@ Listen {{ item[1].port }}
   # the certificate is encrypted, then you will be prompted for a
   # pass phrase.  Note that a kill -HUP will prompt again.  A new
   # certificate can be generated using the genkey(1) command.
-  SSLCertificateFile {{ item[1].cert|default("/".join((tls_certs, item[1].name))) }}.crt
+  SSLCertificateFile {{ item[1].cert|default("/".join((tls_certs, item[1].name))+".crt") }}
 
   #   Server Private Key:
   #   If the key is not combined with the certificate, use this
   #   directive to point at the key file.  Keep in mind that if
   #   you've both a RSA and a DSA private key you can configure
   #   both in parallel (to also allow the use of DSA ciphers, etc.)
-  SSLCertificateKeyFile {{ item[1].key|default("/".join((tls_private, item[1].name))) }}.key
+  SSLCertificateKeyFile {{ item[1].key|default("/".join((tls_private, item[1].name))+".key") }}
 
   #   Server Certificate Chain:
   #   Point SSLCertificateChainFile at a file containing the
@@ -52,15 +52,15 @@ Listen {{ item[1].port }}
   #   the referenced file can be the same as SSLCertificateFile
   #   when the CA certificates are directly appended to the server
   #   certificate for convinience.
-  SSLCertificateChainFile {{ item[1].cert|default("/".join((tls_certs, item[1].name))) }}.crt
+  SSLCertificateChainFile {{ item[1].cert|default("/".join((tls_certs, item[1].name))+".crt") }}
 
 {% if item[1].sslproxy|default(false) %}
   #   SSL/TLS Protocol Engine for proxy:
   SSLProxyEngine on
-  SSLProxyCACertificateFile {{ item[1].sslproxy_cacert }}
-  SSLProxyMachineCertificateFile {{ item[1].sslproxy_cert }}
+  SSLProxyCACertificateFile {{ item[1].sslproxy_cacert|default(apache_sslproxy_cacert) }}
+  SSLProxyMachineCertificateFile {{ item[1].sslproxy_cert|default(apache_sslproxy_cert) }}
   SSLProxyVerify require
-  SSLProxyVerifyDepth {{ item[1].sslproxy_verifydepth|default(2) }}
+  SSLProxyVerifyDepth {{ item[1].sslproxy_verifydepth|default(apache_sslproxy_verifydepth) }}
 
 {% endif %}
   #   SSL Engine Options:
