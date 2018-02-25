@@ -5,6 +5,13 @@
       name: sysstat
       state: installed
 
+  - name: enable power statistics
+    lineinfile:
+      path: /etc/sysconfig/sysstat
+      regexp: '^SADC_OPTIONS='
+      line: 'SADC_OPTIONS="-S DISK -S POWER"'
+    when: ansible_virtualization_role != "guest"
+
   - name: enable sysstat service
     service:
       name: sysstat
