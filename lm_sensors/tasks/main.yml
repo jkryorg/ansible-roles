@@ -1,0 +1,7 @@
+---
+- name: install lm_sensors
+  package:
+    name: lm_sensors
+    state: installed
+  notify: run sensors-detect
+  when: ansible_system == "Linux" and ansible_virtualization_role != "guest"
