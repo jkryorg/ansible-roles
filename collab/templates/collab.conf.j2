@@ -7,4 +7,4 @@
 </Directory>
 
 {% endfor %}
-WSGIDaemonProcess collab user=collab group=collab umask=0007 processes={{ ansible_processor_count }} threads={{ collab_threads }} maximum-requests=4000 display-name=%{GROUP}
+WSGIDaemonProcess collab user=collab group=collab umask=0007 processes={{ ansible_processor_vcpus }} threads={{ collab_threads }} maximum-requests=4000 display-name=%{GROUP}
