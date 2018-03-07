@@ -4,5 +4,5 @@
     state: present
     user: root
     key: "{{ ssh_authorized_keys|join('\n') }}"
-    exclusive: yes
+    exclusive: "{{ ssh_authorized_keys_exclusive|default(yes) }}"
   when: ssh_authorized_keys is defined
