@@ -40,6 +40,7 @@
   yum:
     name: "{{ ansible_cache }}/{{ collab_ejabberd_package | basename }}"
     state: installed
+  notify: restart ejabberd
 
 - name: create directory for certificate fragments
   file:
