@@ -1,0 +1,15 @@
+---
+- name: configure dhcpd
+  copy:
+    src: "{{ dhcpd_config_src }}"
+    dest: /etc/dhcpd.conf
+    mode: 0644
+    owner: root
+    group: "{{ ansible_wheel }}"
+  notify: restart dhcpd
+
+- name: enable dhcpd
+  service:
+    name: dhcpd
+    state: started
+    enabled: yes
