@@ -120,3 +120,11 @@
     name: "{{ apache_service }}"
     state: started
     enabled: yes
+
+- name: install logrotate cron job
+  copy:
+    src: files/apache-logrotate
+    dest: /etc/cron.weekly/apache-logrotate
+    mode: 0755
+    owner: root
+    group: root

@@ -1,0 +1,22 @@
+#!/bin/sh
+
+set -e
+
+umask 022
+
+SUFFIX=`date +%Y%m%d-%H%M%S`
+LOGS=
+
+for log in /srv/www/log/*/*_log; do
+    [ -s $log ] || continue
+    mv $log ${log}.${SUFFIX}
+    LOGS="${LOGS} ${log}.${SUFFIX}"
+done
+
+[ -z "${LOGS}" ] && exit 0
+
+apachectl restart
+
+for log in ${LOGS}; do
+    gzip $log
+done
