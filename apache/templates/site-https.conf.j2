@@ -78,5 +78,8 @@ Listen {{ item[1].port }}
     SSLOptions +StdEnvVars
   </Directory>
 
+  # Always add HSTS header
+  Header always set Strict-Transport-Security "max-age=15768000"
+
   IncludeOptional conf.sites.d/{{ '%02d'|format(item[0]) }}-{{ item[1].name }}.conf.d/*.conf
 </VirtualHost>
