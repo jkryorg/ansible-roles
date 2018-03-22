@@ -1,5 +1,16 @@
-{% if item[1].port is defined and item[1].port != 443 %}
-Listen {{ item[1].port }}
+#jinja2: lstrip_blocks: "True", trim_blocks: "True"
+{% if item[1].http_redirect|default(false) %}
+<VirtualHost {{ item[1].addr|default("*") }}:80 }}>
+  ServerName {{ item[1].name }}
+{% for alias in item[1].aliases|default([]) %}
+  ServerAlias {{ alias }}
+{% endfor %}
+  ErrorLog /srv/www/log/{{ item[1].name }}/error_log
+  CustomLog /srv/www/log/{{ item[1].name }}/access_log combined
+
+  RewriteEngine On
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+</VirtualHost>
 
 {% endif %}
 <VirtualHost {{ item[1].addr|default("*") }}:{{ item[1].port|default(443) }}>
