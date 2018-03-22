@@ -1,6 +1,6 @@
 #jinja2: lstrip_blocks: "True", trim_blocks: "True"
 {% if item[1].http_redirect|default(false) %}
-<VirtualHost {{ item[1].addr|default("*") }}:80 }}>
+<VirtualHost {{ item[1].addr|default("*") }}:80>
   ServerName {{ item[1].name }}
 {% for alias in item[1].aliases|default([]) %}
   ServerAlias {{ alias }}
