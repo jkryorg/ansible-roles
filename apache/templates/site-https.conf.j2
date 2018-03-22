@@ -9,7 +9,11 @@
   CustomLog /srv/www/log/{{ item[1].name }}/access_log combined
 
   RewriteEngine On
+  {% if item[1].canonicalize_hostname|default(false) %}
+  RewriteRule ^ https://{{ item[1].name }}%{REQUEST_URI} [R=301,L]
+  {% else %}
   RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+  {% endif %}
 </VirtualHost>
 
 {% endif %}
@@ -89,8 +93,13 @@
     SSLOptions +StdEnvVars
   </Directory>
 
-  # Always add HSTS header
   Header always set Strict-Transport-Security "max-age=15768000"
 
+{% if item[1].canonicalize_hostname|default(false) %}
+  RewriteEngine On
+  RewriteCond %{HTTP_HOST} !={{ item[1].name }} [NC]
+  RewriteRule ^ https://{{ item[1].name }}%{REQUEST_URI} [R=301,L]
+
+{% endif %}
   IncludeOptional conf.sites.d/{{ '%02d'|format(item[0]) }}-{{ item[1].name }}.conf.d/*.conf
 </VirtualHost>
