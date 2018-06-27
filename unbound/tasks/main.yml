@@ -23,7 +23,7 @@
     path: "{{ unbound_confdir }}/local.d"
     mode: 0755
     owner: root
-    group: "{{ ansible_wheel }}"
+    group: "{{ unbound_group }}"
 
 - name: copy local data
   copy:
@@ -31,7 +31,7 @@
     dest: "{{ unbound_confdir }}/local.d/local.conf"
     mode: 0644
     owner: root
-    group: "{{ ansible_wheel }}"
+    group: "{{ unbound_group }}"
   when: unbound_local_src is defined
   notify: reload unbound
 
