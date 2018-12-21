@@ -10,4 +10,5 @@
 - name: install package
   pip:
     name: "{{ ansible_cache }}/{{ opencollab_package | basename }}"
+    umask: 0022
     extra_args: --no-index
