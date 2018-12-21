@@ -34,7 +34,7 @@
 - name: install moin
   pip:
     name: "{{ collab_moin_basedir }}"
-    umask: 0022
+    umask: "0022"
     extra_args: --no-index
 
 - name: copy graphingwiki packages
@@ -51,7 +51,7 @@
 - name: install graphingwiki packages
   pip:
     name: "{{ ansible_cache }}/{{ item | basename }}"
-    umask: 0022
+    umask: "0022"
     extra_args: --egg --no-index
   with_items:
     - "{{ collab_graphingwiki_package }}"
