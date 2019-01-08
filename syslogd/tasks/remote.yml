@@ -11,4 +11,4 @@
     name: syslogd
     state: started
     enabled: yes
-    arguments: "-h -C {{syslogd_cacert}} -c {{syslogd_cert}} -k {{syslogd_key}}"
+    arguments: "-h -C {{ syslogd_cacert }} -c {{ syslogd_cert }} -k {{ syslogd_key }}"

@@ -16,4 +16,4 @@
     name: syslogd
     state: started
     enabled: yes
-    arguments: "-n -C {{syslogd_cacert}} -S 0.0.0.0:6514 -S :::6514"
+    arguments: "-n -C {{ syslogd_cacert }} -S 0.0.0.0:6514 -S :::6514"
