@@ -11,11 +11,15 @@
 {% endfor %}
 {% for rule in firewall_in %}
   {% if rule.from is defined %}
-    {% for from in rule.from | ipv4 %}
--A INPUT -m state --state NEW -m {{ rule.proto }} -p {{ rule.proto }} -s {{ from }} --dport {{ rule.port }} -j ACCEPT
+    {% for from in [rule.from]|flatten|ipv4 %}
+      {% for port in [rule.port]|flatten %}
+-A INPUT -m state --state NEW -m {{ rule.proto }} -p {{ rule.proto }} -s {{ from }} --dport {{ port }} -j ACCEPT
+      {% endfor %}
     {% endfor %}
   {% else %}
--A INPUT -m state --state NEW -m {{ rule.proto }} -p {{ rule.proto }} --dport {{ rule.port }} -j ACCEPT
+    {% for port in [rule.port]|flatten %}
+-A INPUT -m state --state NEW -m {{ rule.proto }} -p {{ rule.proto }} --dport {{ port }} -j ACCEPT
+    {% endfor %}
   {% endif %}
 {% endfor %}
 -A INPUT -j REJECT --reject-with icmp-host-prohibited

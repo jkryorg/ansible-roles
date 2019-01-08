@@ -13,10 +13,14 @@ pass in quick inet6 proto icmp6
 {% endfor %}
 {% for rule in firewall_in %}
   {% if rule.from is defined %}
-    {% for from in rule.from | ipaddr %}
-pass in quick proto {{ rule.proto }} from {{ from }} to port {{ rule.port }}
+    {% for from in [rule.from]|flatten|ipaddr %}
+      {% for port in [rule.port]|flatten %}
+pass in quick proto {{ rule.proto }} from {{ from }} to port {{ port }}
+      {% endfor %}
     {% endfor %}
   {% else %}
-pass in quick proto {{ rule.proto }} to port {{ rule.port }}
+    {% for port in [rule.port]|flatten %}
+pass in quick proto {{ rule.proto }} to port {{ port }}
+    {% endfor %}
   {% endif %}
 {% endfor %}
