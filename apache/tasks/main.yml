@@ -112,8 +112,7 @@
   with_nested:
     - "{{ apache_sites_present.files }}"
     - ["", ".d"]
-  # workaround for inconsistent attribute naming in ansible 2.4
-  when: item[0].path not in apache_sites_managed.results|selectattr("dest", "defined")|map(attribute="dest")|union(apache_sites_managed.results|selectattr("path", "defined")|map(attribute="path"))
+  when: item[0].path not in apache_sites_managed.results|map(attribute="dest")
 
 - name: enable apache service
   service:
