@@ -1,0 +1,17 @@
+#jinja2: lstrip_blocks: "True", trim_blocks: "True"
+# {{ ansible_managed }}
+table aliases file:{{ opensmtpd_aliases }}
+
+{% if ansible_lo0 is defined %}
+listen on lo0
+{% else %}
+listen on lo
+{% endif %}
+
+action "local" mbox alias <aliases>
+action "relay" relay{% if opensmtpd_relay_host is defined %} host smtp+tls://{{ opensmtpd_relay_host }}{% endif %}{% if opensmtpd_relay_from is defined %} mail-from "{{ opensmtpd_relay_from }}"{% endif %}
+
+{% if not (opensmtpd_relay_only and opensmtpd_relay_host is defined) %}
+match for local action "local"
+{% endif %}
+match for any action "relay"

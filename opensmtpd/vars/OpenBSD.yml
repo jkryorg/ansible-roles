@@ -1,4 +1,5 @@
 ---
 opensmtpd_aliases: /etc/mail/aliases
 opensmtpd_config: /etc/mail/smtpd.conf
+opensmtpd_template: smtpd.conf.OpenBSD.j2
 opensmtpd_service: smtpd

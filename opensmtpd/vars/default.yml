@@ -1,5 +1,6 @@
 ---
 opensmtpd_aliases: /etc/aliases
 opensmtpd_config: /etc/opensmtpd/smtpd.conf
+opensmtpd_template: smtpd.conf.j2
 opensmtpd_service: opensmtpd
 opensmtpd_package: opensmtpd

@@ -51,7 +51,7 @@
 
 - name: configure opensmtpd from template
   template:
-    src: smtpd.conf.j2
+    src: "{{ opensmtpd_template }}"
     dest: "{{ opensmtpd_config }}"
     mode: 0644
     owner: root
