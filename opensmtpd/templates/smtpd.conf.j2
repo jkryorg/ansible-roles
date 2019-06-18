@@ -11,10 +11,4 @@ listen on lo
 {% if not (opensmtpd_relay_only and opensmtpd_relay_host is defined) %}
 accept for local alias <aliases> deliver to mbox
 {% endif %}
-accept from local for any relay
-{%- if opensmtpd_relay_host is defined %}
- via smtp+tls://{{ opensmtpd_relay_host }}
-{%- endif %}
-{% if opensmtpd_relay_from is defined %}
- as "{{ opensmtpd_relay_from }}"
-{% endif %}
+accept from local for any relay{% if opensmtpd_relay_host is defined %} via smtp+tls://{{ opensmtpd_relay_host }}{% endif %}{% if opensmtpd_relay_from is defined %} as "{{ opensmtpd_relay_from }}"{% endif %}
