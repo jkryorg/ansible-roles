@@ -1,3 +1,11 @@
 ---
 - name: include OS-specific variables
   include_vars: "{{ ansible_os_family }}.yml"
+
+- name: copy ffdhe3072.pem
+  copy:
+    src: "files/ffdhe3072.pem"
+    dest: "{{ tls_certs }}/ffdhe3072.pem"
+    mode: 0644
+    owner: root
+    group: "{{ ansible_wheel }}"

@@ -2,5 +2,6 @@
 ssl = required
 ssl_cert = <{{ dovecot_cert }}
 ssl_key = <{{ dovecot_key }}
+ssl_dh = <{{ tls_certs }}/ffdhe3072.pem
+ssl_min_protocol = TLSv1.2
 ssl_cipher_list = {{ tls_intermediate_ciphersuites }}
-ssl_prefer_server_ciphers = yes

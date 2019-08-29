@@ -16,10 +16,13 @@ listen:
     access: c2s
     starttls_required: true
     certfile: "/etc/ejabberd/ejabberd.pem"
+    dhfile: "{{ tls_certs }}/ffdhe3072.pem"
     ciphers: "{{ tls_intermediate_ciphersuites }}"
     protocol_options:
       - "no_sslv2"
       - "no_sslv3"
+      - "no_tlsv1"
+      - "no_tlsv1_1"
   - port: 5223
     module: ejabberd_c2s
     max_stanza_size: 655360
@@ -27,10 +30,13 @@ listen:
     access: c2s
     tls: true
     certfile: "/etc/ejabberd/ejabberd.pem"
+    dhfile: "{{ tls_certs }}/ffdhe3072.pem"
     ciphers: "{{ tls_intermediate_ciphersuites }}"
     protocol_options:
       - "no_sslv2"
       - "no_sslv3"
+      - "no_tlsv1"
+      - "no_tlsv1_1"
   - port: 5269
     module: ejabberd_s2s_in
     max_stanza_size: 1310720
@@ -44,11 +50,14 @@ listen:
 
 s2s_access: s2s
 s2s_certfile: "/etc/ejabberd/ejabberd.pem"
-s2s_use_starttls: required
+s2s_dhfile: "{{ tls_certs }}/ffdhe3072.pem"
 s2s_ciphers: "{{ tls_intermediate_ciphersuites }}"
+s2s_use_starttls: required
 s2s_protocol_options:
   - "no_sslv2"
   - "no_sslv3"
+  - "no_tlsv1"
+  - "no_tlsv1_1"
 
 disable_sasl_mechanisms:
   - "X-OAUTH2"
