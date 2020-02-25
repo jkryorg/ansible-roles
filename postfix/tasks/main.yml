@@ -1,0 +1,54 @@
+---
+- name: install postfix
+  package:
+    name: postfix
+    state: installed
+
+- name: configure myhostname
+  lineinfile:
+    path: /etc/postfix/main.cf
+    regexp: '^myhostname\s*='
+    insertafter: '^#myhostname\s*='
+    line: "myhostname = {{ postfix_myhostname }}"
+  notify: restart postfix
+
+- name: configure relayhost
+  lineinfile:
+    path: /etc/postfix/main.cf
+    regexp: '^relayhost\s*='
+    insertafter: '^#relayhost\s*='
+    line: "relayhost = {{ postfix_relayhost }}"
+  notify: restart postfix
+  when: postfix_relayhost is defined
+
+- name: configure masquerade_classes
+  lineinfile:
+    path: /etc/postfix/main.cf
+    regexp: '^masquerade_classes\s*='
+    insertafter: '^#?relayhost\s*='
+    line: "masquerade_classes = envelope_sender"
+  notify: restart postfix
+  when: postfix_masquerade_domains is defined
+
+- name: configure masquerade_domains
+  lineinfile:
+    path: /etc/postfix/main.cf
+    regexp: '^masquerade_domains\s*='
+    insertafter: '^masquerade_classes\s*='
+    line: "masquerade_domains = {{ postfix_masquerade_domains }}"
+  notify: restart postfix
+  when: postfix_masquerade_domains is defined
+
+- name: configure smtp_tls_security_level
+  lineinfile:
+    path: /etc/postfix/main.cf
+    regexp: '^smtp_tls_security_level\s*='
+    insertafter: '^#?relayhost\s*='
+    line: "smtp_tls_security_level = {{ 'encrypt' if postfix_relayhost is defined else 'may' }}"
+  notify: restart postfix
+
+- name: enable postfix service
+  service:
+    name: postfix
+    state: started
+    enabled: yes
