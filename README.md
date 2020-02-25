@@ -1,3 +1,3 @@
-# ansible-roles [![CircleCI](https://circleci.com/gh/jkryorg/ansible-roles.svg?style=svg)](https://circleci.com/gh/jkryorg/ansible-roles)
+# ansible-roles ![](https://github.com/jkryorg/ansible-roles/workflows/Lint/badge.svg)
 
 Ansible roles for CentOS and OpenBSD. Requires Ansible 2.4.
