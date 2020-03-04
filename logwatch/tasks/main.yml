@@ -1,15 +1,26 @@
 ---
 - block:
-  - name: install logwatch package
-    package:
-      name: logwatch
-      state: installed
+    - name: install logwatch package
+      package:
+        name: logwatch
+        state: installed
 
-  - name: configure logwatch
-    template:
-      src: logwatch.conf.j2
-      dest: /etc/logwatch/conf/logwatch.conf
-      mode: 0644
-      owner: root
-      group: "{{ ansible_wheel }}"
+    - name: configure logwatch
+      template:
+        src: logwatch.conf.j2
+        dest: /etc/logwatch/conf/logwatch.conf
+        mode: 0644
+        owner: root
+        group: "{{ ansible_wheel }}"
+
+    - name: configure logwatch services
+      copy:
+        src: "files/{{ item }}"
+        dest: "/etc/logwatch/conf/services/{{ item }}"
+        mode: 0644
+        owner: root
+        group: "{{ ansible_wheel }}"
+      with_items:
+        - "postfix.conf"
+        - "zz-disk_space.conf"
   when: ansible_system == "Linux"
