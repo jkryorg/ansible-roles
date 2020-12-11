@@ -47,6 +47,14 @@
     line: "smtp_tls_security_level = {{ 'encrypt' if postfix_relayhost is defined else 'may' }}"
   notify: restart postfix
 
+- name: disable enable_original_recipient
+  lineinfile:
+    path: /etc/postfix/main.cf
+    regexp: '^enable_original_recipient\s*='
+    insertafter: '^#?relayhost\s*='
+    line: "enable_original_recipient = no"
+  notify: restart postfix
+
 - name: enable postfix service
   service:
     name: postfix
