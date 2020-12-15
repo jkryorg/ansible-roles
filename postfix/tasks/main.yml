@@ -14,30 +14,30 @@
 
 - name: configure relayhost
   lineinfile:
+    state: "{{ 'present' if postfix_relayhost is defined else 'absent' }}"
     path: /etc/postfix/main.cf
     regexp: '^relayhost\s*='
     insertafter: '^#relayhost\s*='
-    line: "relayhost = {{ postfix_relayhost }}"
+    line: "relayhost = {{ postfix_relayhost|default() }}"
   notify: restart postfix
-  when: postfix_relayhost is defined
 
 - name: configure masquerade_classes
   lineinfile:
+    state: "{{ 'present' if postfix_masquerade_domains is defined else 'absent' }}"
     path: /etc/postfix/main.cf
     regexp: '^masquerade_classes\s*='
     insertafter: '^#?relayhost\s*='
     line: "masquerade_classes = envelope_sender"
   notify: restart postfix
-  when: postfix_masquerade_domains is defined
 
 - name: configure masquerade_domains
   lineinfile:
+    state: "{{ 'present' if postfix_masquerade_domains is defined else 'absent' }}"
     path: /etc/postfix/main.cf
     regexp: '^masquerade_domains\s*='
     insertafter: '^masquerade_classes\s*='
-    line: "masquerade_domains = {{ postfix_masquerade_domains }}"
+    line: "masquerade_domains = {{ postfix_masquerade_domains|default() }}"
   notify: restart postfix
-  when: postfix_masquerade_domains is defined
 
 - name: configure smtp_tls_security_level
   lineinfile:
