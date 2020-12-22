@@ -31,6 +31,7 @@ restart_syslog()
     for pid in /var/run/syslogd.pid /var/run/rsyslogd.pid; do
         if [ -s "${pid}" ]; then
             kill -HUP `cat ${pid}`
+            sleep 2
             return
         fi
     done
