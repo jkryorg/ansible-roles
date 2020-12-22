@@ -69,7 +69,7 @@ done
 restart_syslog
 
 for log in ${LOGS}; do
-    gzip -f ${log} || myerror "Error while gzipping ${log}"
+    nice gzip -f ${log} || myerror "Error while gzipping ${log}"
     loggz="`basename ${log}`.gz"
     ( cd `dirname ${log}` && openssl sha1 -out ${loggz}.sha1 ${loggz} )
 done
