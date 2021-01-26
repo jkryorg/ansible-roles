@@ -1,5 +1,5 @@
 {% for site in collab_sites %}
-<Directory "/srv/www/htdocs/{{ site }}/collab">
+<Directory "/srv/www/htdocs/{{ site }}{{ collab_directory }}">
   Options +ExecCGI
   AllowOverride All
   WSGIProcessGroup collab
