@@ -17,7 +17,7 @@
 # Control access to UserDir directories.  The following is an example
 # for a site where these directories are restricted to read-only.
 #
-<Directory "/home/*/public_html">
+<Directory "/home/*/{{ apache_userdir }}">
     AllowOverride FileInfo AuthConfig Limit Indexes
     Options MultiViews Indexes SymLinksIfOwnerMatch IncludesNoExec
     Require method GET POST OPTIONS
