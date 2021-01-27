@@ -23,7 +23,7 @@
     dest: /srv/www
   when: apache_datadir != "/srv/www"
 
-- name: create default virtual host directories
+- name: create default site directory
   file:
     state: directory
     path: "{{ item }}"
@@ -34,7 +34,14 @@
     - "/srv/www/htdocs"
     - "/srv/www/htdocs/{{ ansible_nodename }}"
     - "/srv/www/log"
-    - "/srv/www/log/{{ ansible_nodename }}"
+
+- name: create default log directory
+  file:
+    state: directory
+    path: "/srv/www/log/{{ ansible_nodename }}"
+    mode: 0750
+    owner: root
+    group: root
 
 - name: create configuration directories
   file:
@@ -69,15 +76,24 @@
     - ssl.conf
     - userdir.conf
 
-- name: create site directories
+- name: create site htdocs directories
   file:
     state: directory
-    path: "{{ item[0] }}/{{ item[1].name }}"
+    path: "/srv/www/htdocs/{{ item.name }}"
     mode: 0755
+    owner: "{{ item.user if item.user is defined else 'root' }}"
+    group: "{{ item.user if item.user is defined else 'root' }}"
+  with_items:
+    - "{{ apache_sites }}"
+
+- name: create site log directories
+  file:
+    state: directory
+    path: "/srv/www/log/{{ item.name }}"
+    mode: 0750
     owner: root
-    group: root
-  with_nested:
-    - ["/srv/www/htdocs", "/srv/www/log"]
+    group: "{{ item.user if item.user is defined else 'root' }}"
+  with_items:
     - "{{ apache_sites }}"
 
 - name: create site configurations
