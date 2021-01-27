@@ -67,6 +67,7 @@
   with_indexed_items:
     - listen.conf
     - ssl.conf
+    - userdir.conf
 
 - name: create site directories
   file:
