@@ -1,0 +1,11 @@
+#jinja2: lstrip_blocks: "True", trim_blocks: "True"
+{% if apache_remoteip_header is defined %}
+<IfModule remoteip_module>
+  RemoteIPHeader {{ apache_remoteip_header }}
+  {% if apache_remoteip_proxy is defined %}
+  RemoteIPInternalProxy {{ apache_remoteip_proxy }}
+  {% endif %}
+</IfModule>
+{% else %}
+# RemoteIPHeader not configured
+{% endif %}

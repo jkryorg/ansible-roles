@@ -75,6 +75,7 @@
     - listen.conf
     - ssl.conf
     - userdir.conf
+    - remoteip.conf
 
 - name: create site htdocs directories
   file:
